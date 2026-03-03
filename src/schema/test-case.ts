@@ -113,15 +113,6 @@ export const AlertConfigSchema = z.discriminatedUnion('type', [
       .describe('Environment variable containing Slack webhook URL'),
   }),
   z.object({
-    type: z.literal('email'),
-    smtp_host_env: z.string().min(1).describe('SMTP host env var'),
-    smtp_port: z.number().int().positive().default(587).describe('SMTP port'),
-    smtp_user_env: z.string().min(1).describe('SMTP username env var'),
-    smtp_pass_env: z.string().min(1).describe('SMTP password env var'),
-    from: z.string().min(1).describe('From email address'),
-    to: z.array(z.string().min(1)).min(1).describe('Recipient email addresses'),
-  }),
-  z.object({
     type: z.literal('webhook'),
     url: z
       .string()
