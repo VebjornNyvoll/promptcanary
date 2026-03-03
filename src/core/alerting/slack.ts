@@ -3,13 +3,17 @@ import type { AlertPayload, AlertChannel } from '../../types/index.js';
 export class SlackAlertChannel implements AlertChannel {
   type = 'slack' as const;
   private webhookUrl: string;
+  private maxRetries: number;
 
-  constructor(webhookUrlEnv: string) {
+  constructor(webhookUrlEnv: string, maxRetries = 2) {
     const url = process.env[webhookUrlEnv];
     if (!url) {
-      throw new Error(`Missing Slack webhook URL: environment variable ${webhookUrlEnv} is not set`);
+      throw new Error(
+        `Missing Slack webhook URL: environment variable ${webhookUrlEnv} is not set`,
+      );
     }
     this.webhookUrl = url;
+    this.maxRetries = maxRetries;
   }
 
   async send(alert: AlertPayload): Promise<void> {
@@ -58,15 +62,29 @@ export class SlackAlertChannel implements AlertChannel {
       ],
     };
 
-    const response = await fetch(this.webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
+    let lastError: Error | undefined;
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Slack webhook failed (${String(response.status)}): ${text}`);
+    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+      try {
+        const response = await fetch(this.webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) return;
+
+        const text = await response.text();
+        lastError = new Error(`Slack webhook failed (${String(response.status)}): ${text}`);
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+
+      if (attempt < this.maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** attempt));
+      }
     }
+
+    throw lastError ?? new Error('Slack webhook failed after retries');
   }
 }
