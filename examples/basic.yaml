@@ -1,0 +1,18 @@
+# Basic PromptCanary test configuration
+# Tests a single prompt against one provider
+version: "1"
+
+config:
+  providers:
+    - name: openai
+      model: gpt-4o-mini
+      api_key_env: OPENAI_API_KEY
+
+tests:
+  - name: "Greeting response"
+    prompt: "Say hello in a professional way"
+    expect:
+      max_length: 200
+      must_contain: ["hello"]
+      must_not_contain: ["error", "sorry", "I can't"]
+      tone: "professional"

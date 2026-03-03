@@ -1,0 +1,80 @@
+# Full PromptCanary configuration demonstrating all features
+version: "1"
+
+config:
+  # LLM providers to test against
+  providers:
+    - name: openai
+      model: gpt-4o
+      api_key_env: OPENAI_API_KEY
+      temperature: 0.1        # Low temperature for consistent outputs
+      max_tokens: 1000
+      timeout_ms: 30000       # 30-second timeout
+
+    - name: anthropic
+      model: claude-sonnet-4-20250514
+      api_key_env: ANTHROPIC_API_KEY
+      temperature: 0.1
+      max_tokens: 1000
+
+  # Cron schedule: run every 6 hours
+  schedule: "0 */6 * * *"
+
+  # Alert channels — notified when tests fail
+  alerts:
+    - type: slack
+      webhook_url_env: SLACK_WEBHOOK_URL
+
+    - type: webhook
+      url: "https://example.com/promptcanary-webhook"
+      headers:
+        Authorization: "Bearer my-token"
+
+  # Embedding model for semantic similarity checks
+  embedding_provider:
+    api_key_env: OPENAI_API_KEY
+    model: text-embedding-3-small
+
+tests:
+  # Test 1: Summarization with semantic baseline
+  - name: "Article summarization"
+    prompt: "Summarize this article in bullet points: {{article}}"
+    variables:
+      article: >
+        NASA announced today that the James Webb Space Telescope has discovered
+        evidence of water vapor in the atmosphere of a rocky exoplanet. This
+        finding marks the first time water has been detected on a planet similar
+        in size to Earth outside our solar system.
+    providers: ["openai", "anthropic"]
+    expect:
+      format: bullet_points
+      max_length: 500
+      min_length: 50
+      must_contain: ["James Webb", "water"]
+      must_not_contain: ["error", "I cannot", "I'm sorry"]
+      tone: "professional"
+      semantic_similarity:
+        baseline: >
+          The article discusses NASA's James Webb Space Telescope discovering
+          water vapor on a rocky exoplanet, marking the first detection of water
+          on an Earth-sized planet outside our solar system.
+        threshold: 0.75
+
+  # Test 2: Code generation
+  - name: "Python sort function"
+    prompt: "Write a Python function to sort a list of integers using merge sort"
+    expect:
+      must_contain: ["def ", "return"]
+      must_not_contain: ["TODO", "undefined", "NotImplemented"]
+      max_length: 2000
+      min_length: 100
+
+  # Test 3: JSON output format
+  - name: "Structured data extraction"
+    prompt: >
+      Extract the following information as JSON:
+      Name: John Doe, Age: 30, City: New York
+    expect:
+      format: json
+      must_contain: ["John Doe", "30", "New York"]
+      max_length: 500
