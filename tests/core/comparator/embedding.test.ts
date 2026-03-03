@@ -93,43 +93,42 @@ describe('EmbeddingCache', () => {
   });
 
   it('falls back to backing store on memory miss', () => {
+    const getCached = vi.fn().mockReturnValue([4, 5, 6]);
     const backing: EmbeddingCacheBacking = {
-      getCachedEmbedding: vi.fn().mockReturnValue([4, 5, 6]),
+      getCachedEmbedding: getCached,
       cacheEmbedding: vi.fn(),
     };
 
     const cache = new EmbeddingCache(backing);
     const result = cache.get('persisted-text');
     expect(result).toEqual([4, 5, 6]);
-    expect(backing.getCachedEmbedding).toHaveBeenCalledOnce();
+    expect(getCached).toHaveBeenCalledOnce();
   });
 
   it('writes through to backing store on set', () => {
+    const setCache = vi.fn();
     const backing: EmbeddingCacheBacking = {
       getCachedEmbedding: vi.fn(),
-      cacheEmbedding: vi.fn(),
+      cacheEmbedding: setCache,
     };
 
     const cache = new EmbeddingCache(backing, 'test-model');
     cache.set('new-text', [7, 8, 9]);
-    expect(backing.cacheEmbedding).toHaveBeenCalledOnce();
-    expect(backing.cacheEmbedding).toHaveBeenCalledWith(
-      contentHash('new-text'),
-      [7, 8, 9],
-      'test-model',
-    );
+    expect(setCache).toHaveBeenCalledOnce();
+    expect(setCache).toHaveBeenCalledWith(contentHash('new-text'), [7, 8, 9], 'test-model');
   });
 
   it('promotes backing store hit to memory', () => {
+    const getCached = vi.fn().mockReturnValueOnce([1, 2, 3]).mockReturnValue(undefined);
     const backing: EmbeddingCacheBacking = {
-      getCachedEmbedding: vi.fn().mockReturnValueOnce([1, 2, 3]).mockReturnValue(undefined),
+      getCachedEmbedding: getCached,
       cacheEmbedding: vi.fn(),
     };
 
     const cache = new EmbeddingCache(backing);
     cache.get('text');
     cache.get('text');
-    expect(backing.getCachedEmbedding).toHaveBeenCalledTimes(1);
+    expect(getCached).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -185,13 +184,15 @@ describe('OpenAIEmbeddingFetcher', () => {
 
     const fetchSpy = vi
       .spyOn(globalThis, 'fetch')
-      .mockImplementation(async (_url: string | URL | Request, init?: RequestInit) => {
+      .mockImplementation((_url: string | URL | Request, init?: RequestInit) => {
         expect(init?.signal).toBeDefined();
         expect(init?.signal?.aborted).toBe(false);
-        return new Response(JSON.stringify({ data: [{ embedding: [1, 2, 3] }] }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return Promise.resolve(
+          new Response(JSON.stringify({ data: [{ embedding: [1, 2, 3] }] }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
       });
 
     const result = await fetcher.fetchEmbedding('hello');

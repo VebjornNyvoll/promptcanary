@@ -25,8 +25,8 @@ function run(
             ? error.code
             : (child.exitCode ?? 0);
         resolvePromise({
-          stdout: stdout.toString(),
-          stderr: stderr.toString(),
+          stdout,
+          stderr,
           exitCode: code,
         });
       },
