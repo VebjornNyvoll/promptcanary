@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   cosineSimilarity,
   contentHash,
   EmbeddingCache,
   computeSemanticSimilarity,
+  OpenAIEmbeddingFetcher,
 } from '../../../src/core/comparator/embedding.js';
 import type { EmbeddingFetcher } from '../../../src/core/comparator/embedding.js';
 
@@ -90,14 +91,14 @@ describe('EmbeddingCache', () => {
 });
 
 describe('computeSemanticSimilarity', () => {
-const mockFetcher: EmbeddingFetcher = {
-  fetchEmbedding(text: string): Promise<number[]> {
-    // Return deterministic embeddings based on text
-    if (text.includes('similar')) return Promise.resolve([0.9, 0.1, 0.0]);
-    if (text.includes('different')) return Promise.resolve([0.0, 0.1, 0.9]);
-    return Promise.resolve([0.5, 0.5, 0.5]);
-  },
-};
+  const mockFetcher: EmbeddingFetcher = {
+    fetchEmbedding(text: string): Promise<number[]> {
+      // Return deterministic embeddings based on text
+      if (text.includes('similar')) return Promise.resolve([0.9, 0.1, 0.0]);
+      if (text.includes('different')) return Promise.resolve([0.0, 0.1, 0.9]);
+      return Promise.resolve([0.5, 0.5, 0.5]);
+    },
+  };
 
   it('returns high similarity for similar texts', async () => {
     const score = await computeSemanticSimilarity('similar A', 'similar B', mockFetcher);
@@ -126,5 +127,59 @@ const mockFetcher: EmbeddingFetcher = {
     fetchCount = 0;
     await computeSemanticSimilarity('text_a', 'text_b', countingFetcher, cache);
     expect(fetchCount).toBe(0);
+  });
+});
+
+describe('OpenAIEmbeddingFetcher', () => {
+  it('throws when API key env var is not set', () => {
+    expect(() => new OpenAIEmbeddingFetcher('NONEXISTENT_KEY_FOR_TEST')).toThrow('Missing API key');
+  });
+
+  it('passes AbortSignal.timeout to fetch', async () => {
+    vi.stubEnv('TEST_EMBEDDING_KEY', 'sk-test');
+
+    const fetcher = new OpenAIEmbeddingFetcher('TEST_EMBEDDING_KEY', 'text-embedding-3-small', 50);
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (_url: string | URL | Request, init?: RequestInit) => {
+        expect(init?.signal).toBeDefined();
+        expect(init?.signal?.aborted).toBe(false);
+        return new Response(JSON.stringify({ data: [{ embedding: [1, 2, 3] }] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      });
+
+    const result = await fetcher.fetchEmbedding('hello');
+    expect(result).toEqual([1, 2, 3]);
+    expect(fetchSpy).toHaveBeenCalledOnce();
+
+    fetchSpy.mockRestore();
+    vi.unstubAllEnvs();
+  });
+
+  it('aborts when timeout expires', async () => {
+    vi.stubEnv('TEST_EMBEDDING_KEY', 'sk-test');
+
+    const fetcher = new OpenAIEmbeddingFetcher('TEST_EMBEDDING_KEY', 'text-embedding-3-small', 10);
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (_url: string | URL | Request, init?: RequestInit) => {
+        await new Promise((resolve, reject) => {
+          const timer = setTimeout(resolve, 5000);
+          init?.signal?.addEventListener('abort', () => {
+            clearTimeout(timer);
+            reject(init.signal?.reason as Error);
+          });
+        });
+        return new Response('{}', { status: 200 });
+      });
+
+    await expect(fetcher.fetchEmbedding('hello')).rejects.toThrow();
+
+    fetchSpy.mockRestore();
+    vi.unstubAllEnvs();
   });
 });
