@@ -20,6 +20,7 @@
     "@anthropic-ai/sdk": "latest",
     "better-sqlite3": "latest",
     "commander": "latest",
+    "dotenv": "^17.3.1",
     "node-cron": "latest",
     "nodemailer": "latest",
     "openai": "latest",

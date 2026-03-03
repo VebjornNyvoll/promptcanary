@@ -1,8 +1,9 @@
 #!/usr/bin/env node
-import { copyFile, constants } from 'node:fs';
+import { copyFile, constants, existsSync } from 'node:fs';
 import { access } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { config as dotenvConfig } from 'dotenv';
 import { Command, InvalidArgumentError } from 'commander';
 import type { PromptCanaryConfig, RunResult } from '../types/index.js';
 import { VERSION } from '../index.js';
@@ -32,12 +33,30 @@ const ansi = {
 const here = fileURLToPath(new URL('.', import.meta.url));
 const templatePath = resolve(here, '../../examples/basic.yaml');
 
+function loadEnvironment(envFile?: string): void {
+  if (envFile) {
+    const envPath = resolve(process.cwd(), envFile);
+    if (!existsSync(envPath)) {
+      printFailure(`Env file not found: ${envPath}`);
+      process.exitCode = 1;
+      return;
+    }
+    dotenvConfig({ path: envPath, quiet: true });
+  } else {
+    const defaultEnvPath = resolve(process.cwd(), '.env');
+    if (existsSync(defaultEnvPath)) {
+      dotenvConfig({ path: defaultEnvPath, quiet: true });
+    }
+  }
+}
+
 const program = new Command();
 
 program
   .name('promptcanary')
   .description('Uptime monitoring for AI behavior')
-  .version(VERSION);
+  .version(VERSION)
+  .option('--dotenv <path>', 'Path to .env file (defaults to .env in current directory)');
 
 program
   .command('init')
@@ -66,7 +85,7 @@ program
 
     printSuccess(`Created promptcanary.yaml at ${targetPath}`);
     printInfo('Next steps:');
-    printInfo('1. Set OPENAI_API_KEY (and other provider keys) in your environment');
+    printInfo('1. Add your API keys to a .env file or export them in your shell');
     printInfo('2. Edit promptcanary.yaml with your prompts and expectations');
     printInfo('3. Run: promptcanary validate promptcanary.yaml');
     printInfo('4. Run: promptcanary run promptcanary.yaml');
@@ -94,6 +113,8 @@ program
   .option('--json', 'Output machine-readable JSON results', false)
   .option('--verbose', 'Show verbose output', false)
   .action(async (file: string, options: { json: boolean; verbose: boolean }) => {
+    loadEnvironment(program.opts<{ dotenv?: string }>().dotenv);
+    if (process.exitCode === 1) return;
     let storage: Storage | undefined;
     try {
       const config = loadConfig(file);
@@ -134,6 +155,8 @@ program
   .command('monitor <file>')
   .description('Start continuous monitoring from a config schedule')
   .action((file: string) => {
+    loadEnvironment(program.opts<{ dotenv?: string }>().dotenv);
+    if (process.exitCode === 1) return;
     let stop: (() => void) | undefined;
     try {
       const config = loadConfig(file);
@@ -148,7 +171,9 @@ program
           printInfo('Monitoring run started');
         },
         onRunComplete: (passed, failed) => {
-          printInfo(`Monitoring run complete. Passed: ${String(passed)}, Failed: ${String(failed)}`);
+          printInfo(
+            `Monitoring run complete. Passed: ${String(passed)}, Failed: ${String(failed)}`,
+          );
         },
         onError: (error) => {
           printFailure(`Monitoring run error: ${error.message}`);
@@ -259,7 +284,10 @@ async function applyComparisons(
 
     // Skip comparison for results that already failed at the provider level
     // (e.g., missing API key, timeout, rate limit)
-    if (result.response.latency_ms === 0 && result.response.content.startsWith('Provider execution failed:')) {
+    if (
+      result.response.latency_ms === 0 &&
+      result.response.content.startsWith('Provider execution failed:')
+    ) {
       storage.saveRun(result.test_name, testCase.prompt, result);
       continue;
     }
@@ -296,12 +324,7 @@ function printRunTable(results: RunResult[]): void {
     const statusText = result.comparison.passed
       ? `${ansi.green}PASS${ansi.reset}`
       : `${ansi.red}FAIL${ansi.reset}`;
-    return [
-      result.test_name,
-      result.provider,
-      statusText,
-      truncate(result.comparison.details, 80),
-    ];
+    return [result.test_name, result.provider, statusText, truncate(result.comparison.details, 80)];
   });
 
   printTable(headers, dataRows);
@@ -338,9 +361,7 @@ function printTable(headers: string[], rows: string[][]): void {
   printInfo(dividerLine);
 
   for (const row of rows) {
-    const line = row
-      .map((cell, idx) => pad(cell, widths[idx]))
-      .join('  ');
+    const line = row.map((cell, idx) => pad(cell, widths[idx])).join('  ');
     printInfo(line);
   }
 }

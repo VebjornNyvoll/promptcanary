@@ -3,5 +3,6 @@ dist/
 *.db
 .env
 .env.*
+!.env.example
 coverage/
 *.tsbuildinfo
