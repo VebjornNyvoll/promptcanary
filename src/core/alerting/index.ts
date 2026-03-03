@@ -16,9 +16,6 @@ export function createAlertChannels(configs: AlertConfig[]): AlertChannel[] {
         return new SlackAlertChannel(config.webhook_url_env);
       case 'webhook':
         return new WebhookAlertChannel(config.url, config.headers);
-      case 'email':
-        // Email alerting is a post-MVP feature
-        throw new Error('Email alerting is not yet implemented');
       default:
         throw new Error(`Unknown alert channel type`);
     }
@@ -68,9 +65,7 @@ export async function dispatchAlerts(options: DispatchAlertsOptions): Promise<vo
         if (recentlySent) continue;
       }
 
-      alertPromises.push(
-        sendAlert(channel, alert, storage, result.run_id),
-      );
+      alertPromises.push(sendAlert(channel, alert, storage, result.run_id));
     }
   }
 
@@ -85,7 +80,12 @@ async function sendAlert(
 ): Promise<void> {
   try {
     await channel.send(alert);
-    storage?.saveAlert(runId, channel.type, { ...alert, timestamp: alert.timestamp.toISOString() }, true);
+    storage?.saveAlert(
+      runId,
+      channel.type,
+      { ...alert, timestamp: alert.timestamp.toISOString() },
+      true,
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     storage?.saveAlert(runId, channel.type, { error: message }, false);

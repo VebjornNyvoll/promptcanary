@@ -178,17 +178,18 @@ describe('AlertConfigSchema', () => {
     expect(result.type).toBe('webhook');
   });
 
-  it('validates an email alert', () => {
-    const result = AlertConfigSchema.parse({
-      type: 'email',
-      smtp_host_env: 'SMTP_HOST',
-      smtp_port: 587,
-      smtp_user_env: 'SMTP_USER',
-      smtp_pass_env: 'SMTP_PASS',
-      from: 'alerts@example.com',
-      to: ['dev@example.com'],
-    });
-    expect(result.type).toBe('email');
+  it('rejects email type (not implemented)', () => {
+    expect(() =>
+      AlertConfigSchema.parse({
+        type: 'email',
+        smtp_host_env: 'SMTP_HOST',
+        smtp_port: 587,
+        smtp_user_env: 'SMTP_USER',
+        smtp_pass_env: 'SMTP_PASS',
+        from: 'alerts@example.com',
+        to: ['dev@example.com'],
+      }),
+    ).toThrow();
   });
 
   it('rejects webhook with invalid URL', () => {
@@ -252,8 +253,18 @@ describe('PromptCanaryConfigSchema', () => {
   });
 
   it('rejects invalid version', () => {
-    expect(() =>
-      PromptCanaryConfigSchema.parse({ ...minimalConfig, version: '2' }),
-    ).toThrow();
+    expect(() => PromptCanaryConfigSchema.parse({ ...minimalConfig, version: '2' })).toThrow();
+  });
+});
+
+describe('AlertConfigSchema', () => {
+  it('accepts slack config', () => {
+    const result = AlertConfigSchema.parse({ type: 'slack', webhook_url_env: 'SLACK_URL' });
+    expect(result.type).toBe('slack');
+  });
+
+  it('accepts webhook config', () => {
+    const result = AlertConfigSchema.parse({ type: 'webhook', url: 'https://example.com/hook' });
+    expect(result.type).toBe('webhook');
   });
 });
