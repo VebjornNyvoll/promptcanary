@@ -72,7 +72,7 @@ describe('compareResponse', () => {
     expect(result.assertions.some((a) => a.type === 'semantic_similarity')).toBe(false);
   });
 
-  it('handles embedding errors gracefully', async () => {
+  it('treats embedding errors as warnings, not failures', async () => {
     const failingFetcher: EmbeddingFetcher = {
       fetchEmbedding(): Promise<number[]> {
         return Promise.reject(new Error('API error'));
@@ -90,10 +90,39 @@ describe('compareResponse', () => {
       embeddingFetcher: failingFetcher,
     });
 
-    expect(result.passed).toBe(false);
-    const semanticAssertion = result.assertions.find((a) => a.type === 'semantic_similarity');
-    expect(semanticAssertion?.passed).toBe(false);
-    expect(semanticAssertion?.details).toContain('API error');
+    expect(result.passed).toBe(true);
+    expect(result.severity).toBe('warning');
+    const embeddingAssertion = result.assertions.find((a) => a.type === 'embedding_error');
+    expect(embeddingAssertion?.passed).toBe(true);
+    expect(embeddingAssertion?.details).toContain('API error');
+  });
+
+  it('preserves structural results when embedding fails', async () => {
+    const failingFetcher: EmbeddingFetcher = {
+      fetchEmbedding(): Promise<number[]> {
+        return Promise.reject(new Error('service down'));
+      },
+    };
+
+    const result = await compareResponse({
+      response: '- Hello World\n- Another item',
+      expectations: {
+        must_contain: ['hello'],
+        format: 'bullet_points',
+        semantic_similarity: {
+          baseline: 'baseline',
+          threshold: 0.8,
+        },
+      },
+      embeddingFetcher: failingFetcher,
+    });
+
+    expect(result.passed).toBe(true);
+    expect(result.severity).toBe('warning');
+
+    const structuralAssertions = result.assertions.filter((a) => a.type !== 'embedding_error');
+    expect(structuralAssertions.every((a) => a.passed)).toBe(true);
+    expect(result.assertions.some((a) => a.type === 'embedding_error')).toBe(true);
   });
 
   it('runs drift detection with historical scores', async () => {

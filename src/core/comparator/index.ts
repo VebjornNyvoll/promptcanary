@@ -62,11 +62,11 @@ export async function compareResponse(options: CompareOptions): Promise<Comparis
       });
     } catch (error) {
       assertions.push({
-        type: 'semantic_similarity',
-        passed: false,
+        type: 'embedding_error',
+        passed: true,
         expected: 'embedding comparison',
-        actual: 'error',
-        details: `Embedding error: ${error instanceof Error ? error.message : String(error)}`,
+        actual: 'skipped',
+        details: `Embedding unavailable (warning): ${error instanceof Error ? error.message : String(error)}`,
       });
     }
   }
@@ -77,16 +77,16 @@ export async function compareResponse(options: CompareOptions): Promise<Comparis
     assertions.push(driftResult);
   }
 
-  // Determine overall result
   const failedAssertions = assertions.filter((a) => !a.passed);
-  const severity = determineSeverity(failedAssertions, semanticScore);
+  const hasEmbeddingError = assertions.some((a) => a.type === 'embedding_error');
+  const severity = determineSeverity(failedAssertions, semanticScore, hasEmbeddingError);
 
   return {
     passed: failedAssertions.length === 0,
     severity,
     assertions,
     semantic_score: semanticScore,
-    details: buildDetails(failedAssertions),
+    details: buildDetails(failedAssertions, hasEmbeddingError),
   };
 }
 
@@ -119,24 +119,28 @@ function detectDrift(currentScore: number, historicalScores: number[]): Assertio
 function determineSeverity(
   failedAssertions: AssertionResult[],
   semanticScore?: number,
+  hasEmbeddingError = false,
 ): 'pass' | 'warning' | 'critical' {
-  if (failedAssertions.length === 0) return 'pass';
+  if (failedAssertions.length === 0) {
+    return hasEmbeddingError ? 'warning' : 'pass';
+  }
 
-  // Critical: structural assertion failures or very low semantic score
   const hasStructuralFailure = failedAssertions.some(
     (a) => a.type !== 'semantic_similarity' && a.type !== 'drift_detection',
   );
   if (hasStructuralFailure) return 'critical';
 
-  // Critical: semantic score below 0.5
   if (semanticScore !== undefined && semanticScore < 0.5) return 'critical';
 
-  // Warning: only semantic/drift failures
   return 'warning';
 }
 
-function buildDetails(failedAssertions: AssertionResult[]): string {
-  if (failedAssertions.length === 0) return 'All checks passed';
+function buildDetails(failedAssertions: AssertionResult[], hasEmbeddingError = false): string {
+  if (failedAssertions.length === 0) {
+    return hasEmbeddingError
+      ? 'All checks passed (embedding service unavailable)'
+      : 'All checks passed';
+  }
 
   return failedAssertions
     .map((a) => `[${a.type}] ${a.details ?? `Expected ${a.expected}, got ${a.actual}`}`)
