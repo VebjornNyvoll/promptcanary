@@ -103,58 +103,53 @@ export class Storage {
   /**
    * Save a test run and its comparison result.
    */
-  saveRun(
-    testName: string,
-    prompt: string,
-    result: RunResult,
-  ): string {
+  saveRun(testName: string, prompt: string, result: RunResult): string {
     const runId = result.run_id;
 
-    const insertRun = this.db.prepare(`
-      INSERT INTO runs (id, test_name, provider, model, prompt, response, latency_ms, token_usage_prompt, token_usage_completion)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    const insertRunAndComparison = this.db.transaction(() => {
+      const insertRun = this.db.prepare(`
+        INSERT INTO runs (id, test_name, provider, model, prompt, response, latency_ms, token_usage_prompt, token_usage_completion)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
 
-    insertRun.run(
-      runId,
-      testName,
-      result.provider,
-      result.model,
-      prompt,
-      result.response.content,
-      result.response.latency_ms,
-      result.response.token_usage.prompt,
-      result.response.token_usage.completion,
-    );
+      insertRun.run(
+        runId,
+        testName,
+        result.provider,
+        result.model,
+        prompt,
+        result.response.content,
+        result.response.latency_ms,
+        result.response.token_usage.prompt,
+        result.response.token_usage.completion,
+      );
 
-    // Save comparison
-    const compId = randomUUID();
-    const insertComp = this.db.prepare(`
-      INSERT INTO comparisons (id, run_id, passed, severity, semantic_score, details, assertions_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
+      // Save comparison
+      const compId = randomUUID();
+      const insertComp = this.db.prepare(`
+        INSERT INTO comparisons (id, run_id, passed, severity, semantic_score, details, assertions_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `);
 
-    insertComp.run(
-      compId,
-      runId,
-      result.comparison.passed ? 1 : 0,
-      result.comparison.severity,
-      result.comparison.semantic_score ?? null,
-      result.comparison.details,
-      JSON.stringify(result.comparison.assertions),
-    );
+      insertComp.run(
+        compId,
+        runId,
+        result.comparison.passed ? 1 : 0,
+        result.comparison.severity,
+        result.comparison.semantic_score ?? null,
+        result.comparison.details,
+        JSON.stringify(result.comparison.assertions),
+      );
+    });
 
+    insertRunAndComparison();
     return runId;
   }
 
   /**
    * Get recent runs, optionally filtered by test name and/or provider.
    */
-  getRuns(options?: {
-    testName?: string;
-    provider?: string;
-    limit?: number;
-  }): StoredRun[] {
+  getRuns(options?: { testName?: string; provider?: string; limit?: number }): StoredRun[] {
     let sql = 'SELECT * FROM runs WHERE 1=1';
     const params: unknown[] = [];
 
@@ -181,20 +176,16 @@ export class Storage {
    * Get comparison results for a run.
    */
   getComparison(runId: string): StoredComparison | undefined {
-    return this.db
-      .prepare('SELECT * FROM comparisons WHERE run_id = ?')
-      .get(runId) as StoredComparison | undefined;
+    return this.db.prepare('SELECT * FROM comparisons WHERE run_id = ?').get(runId) as
+      | StoredComparison
+      | undefined;
   }
 
   /**
    * Get historical semantic scores for a test+provider combination.
    * Used for drift detection.
    */
-  getHistoricalScores(
-    testName: string,
-    provider: string,
-    limit = 20,
-  ): number[] {
+  getHistoricalScores(testName: string, provider: string, limit = 20): number[] {
     const rows = this.db
       .prepare(
         `SELECT c.semantic_score FROM comparisons c
