@@ -17,6 +17,10 @@ import {
 import { startScheduler } from '../core/scheduler/index.js';
 import { Storage } from '../storage/index.js';
 
+// Import providers for side-effect registration
+import '../core/runner/providers/openai.js';
+import '../core/runner/providers/anthropic.js';
+
 const ansi = {
   green: '\x1b[32m',
   red: '\x1b[31m',
@@ -250,6 +254,13 @@ async function applyComparisons(
   for (const result of results) {
     const testCase = config.tests.find((test) => test.name === result.test_name);
     if (!testCase) {
+      continue;
+    }
+
+    // Skip comparison for results that already failed at the provider level
+    // (e.g., missing API key, timeout, rate limit)
+    if (result.response.latency_ms === 0 && result.response.content.startsWith('Provider execution failed:')) {
+      storage.saveRun(result.test_name, testCase.prompt, result);
       continue;
     }
 
