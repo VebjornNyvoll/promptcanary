@@ -9,7 +9,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "promptcanary": "./dist/cli/index.js"
+    "promptcanary": "dist/cli/index.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,7 +21,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/VebjornNyvoll/promptcanary.git"
+    "url": "git+https://github.com/VebjornNyvoll/promptcanary.git"
   },
   "keywords": [
     "llm",
