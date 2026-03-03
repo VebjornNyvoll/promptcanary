@@ -34,12 +34,63 @@ Install globally to use the `promptcanary` command anywhere:
 npm install -g promptcanary
 ```
 
+## API Keys
+
+PromptCanary reads API keys from environment variables. Choose the approach that fits your environment:
+
+### Local development (`.env` file)
+
+The CLI auto-loads a `.env` file from the current directory. Copy the template and fill in your keys:
+
+```bash
+cp .env.example .env
+# Edit .env with your keys
+promptcanary run promptcanary.yaml
+```
+
+`.env` is gitignored and never committed. dotenv will not overwrite variables already set in your shell.
+
+To load a `.env` file from a different location (e.g. outside your repo for extra security):
+
+```bash
+promptcanary --dotenv ~/.config/promptcanary/.env run promptcanary.yaml
+```
+
+### Shell profile (more secure locally)
+
+Set keys in your shell profile (`~/.bashrc`, `~/.zshrc`, or PowerShell `$PROFILE`) so they never exist in a project file that AI coding tools or other programs could read:
+
+```bash
+# ~/.bashrc or ~/.zshrc
+export OPENAI_API_KEY="sk-..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+```
+
+### CI/CD
+
+Use your CI provider's secrets management. Keys are injected as environment variables at runtime and never touch disk:
+
+```yaml
+# GitHub Actions
+- run: promptcanary run promptcanary.yaml
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
+### Production / Docker
+
+Pass keys via environment variables. Use your platform's secret management (AWS Secrets Manager, Vault, Doppler, etc.):
+
+```bash
+docker run -e OPENAI_API_KEY="$OPENAI_API_KEY" promptcanary run config.yaml
+```
+
 ## Configuration Reference
 
 PromptCanary uses a YAML config file (typically `promptcanary.yaml`) with this structure:
 
 ```yaml
-version: "1"
+version: '1'
 
 config:
   providers:
@@ -50,7 +101,7 @@ config:
       max_tokens: 300
       timeout_ms: 30000
 
-  schedule: "0 */6 * * *"
+  schedule: '0 */6 * * *'
 
   alerts:
     - type: slack
@@ -65,8 +116,8 @@ config:
     model: text-embedding-3-small
 
 tests:
-  - name: "Professional greeting"
-    prompt: "Say hello in a professional way"
+  - name: 'Professional greeting'
+    prompt: 'Say hello in a professional way'
     variables:
       company: PromptCanary
     providers: [openai]
@@ -74,11 +125,11 @@ tests:
       format: plain_text
       min_length: 20
       max_length: 200
-      must_contain: ["hello"]
-      must_not_contain: ["error"]
+      must_contain: ['hello']
+      must_not_contain: ['error']
       tone: professional
       semantic_similarity:
-        baseline: "Hello and welcome. How can I help you today?"
+        baseline: 'Hello and welcome. How can I help you today?'
         threshold: 0.8
 ```
 
@@ -144,6 +195,7 @@ Flags:
 
 - `--json`: Output machine-readable JSON.
 - `--verbose`: Print progress for each provider execution.
+- `--dotenv <path>`: Load environment variables from a specific file instead of `.env`.
 
 Examples:
 
