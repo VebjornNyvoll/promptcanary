@@ -40,8 +40,12 @@ export function startScheduler(options: SchedulerOptions): { stop: () => void } 
     // Prevent overlapping runs
     if (isRunning) return;
     void executeRun(config, storage, embeddingCache, isRunning, onRunStart, onRunComplete, onError)
-      .then(() => { isRunning = false; })
-      .catch(() => { isRunning = false; });
+      .then(() => {
+        isRunning = false;
+      })
+      .catch(() => {
+        isRunning = false;
+      });
     isRunning = true;
   });
 
@@ -96,11 +100,16 @@ export async function executeRun(
       const testCase = config.tests.find((t) => t.name === result.test_name);
       if (!testCase) continue;
 
+      if (
+        result.response.latency_ms === 0 &&
+        result.response.content.startsWith('Provider execution failed:')
+      ) {
+        storage.saveRun(result.test_name, testCase.prompt, result);
+        continue;
+      }
+
       // Get historical scores for drift detection
-      const historicalScores = storage.getHistoricalScores(
-        result.test_name,
-        result.provider,
-      );
+      const historicalScores = storage.getHistoricalScores(result.test_name, result.provider);
 
       // Run comparison
       const comparison = await compareResponse({
