@@ -17,6 +17,8 @@ export type AlertConfig = z.infer<typeof AlertConfigSchema>;
 export type PromptCanaryConfig = z.infer<typeof PromptCanaryConfigSchema>;
 
 // Runtime types (not schema-derived)
+export type ErrorType = 'rate_limit' | 'timeout' | 'auth' | 'provider' | 'unknown';
+
 export interface LLMResponse {
   content: string;
   model: string;
@@ -27,6 +29,8 @@ export interface LLMResponse {
     completion: number;
   };
   timestamp: Date;
+  error_type?: ErrorType;
+  retry_after_ms?: number;
 }
 
 export interface RunResult {

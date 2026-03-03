@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { runTests } from '../../../src/core/runner/index.js';
 import { registerProvider, type LLMProvider } from '../../../src/core/runner/providers/base.js';
 import type { LLMResponse, PromptCanaryConfig } from '../../../src/types/index.js';
+import { RateLimitError, TimeoutError, ProviderError } from '../../../src/types/index.js';
 
 function mockResponse(provider: string, model: string, content: string): LLMResponse {
   return {
@@ -84,8 +85,12 @@ describe('runTests', () => {
   it('uses provider overrides when specified on test cases', async () => {
     const providerAName = `provider-override-a-${randomUUID()}`;
     const providerBName = `provider-override-b-${randomUUID()}`;
-    const providerAExecute = vi.fn(() => Promise.resolve(mockResponse(providerAName, 'model-a', 'a')));
-    const providerBExecute = vi.fn(() => Promise.resolve(mockResponse(providerBName, 'model-b', 'b')));
+    const providerAExecute = vi.fn(() =>
+      Promise.resolve(mockResponse(providerAName, 'model-a', 'a')),
+    );
+    const providerBExecute = vi.fn(() =>
+      Promise.resolve(mockResponse(providerBName, 'model-b', 'b')),
+    );
 
     const providerA: LLMProvider = {
       name: providerAName,
@@ -126,7 +131,9 @@ describe('runTests', () => {
   it('isolates provider errors without blocking other providers', async () => {
     const providerOkName = `provider-ok-${randomUUID()}`;
     const providerFailName = `provider-fail-${randomUUID()}`;
-    const providerOkExecute = vi.fn(() => Promise.resolve(mockResponse(providerOkName, 'model-ok', 'ok')));
+    const providerOkExecute = vi.fn(() =>
+      Promise.resolve(mockResponse(providerOkName, 'model-ok', 'ok')),
+    );
     const providerFailExecute = vi.fn(() => Promise.reject(new Error('boom')));
 
     const providerOk: LLMProvider = {
@@ -147,7 +154,12 @@ describe('runTests', () => {
       config: {
         providers: [
           { name: providerOkName, model: 'model-ok', api_key_env: 'KEY_OK', timeout_ms: 1000 },
-          { name: providerFailName, model: 'model-fail', api_key_env: 'KEY_FAIL', timeout_ms: 1000 },
+          {
+            name: providerFailName,
+            model: 'model-fail',
+            api_key_env: 'KEY_FAIL',
+            timeout_ms: 1000,
+          },
         ],
       },
       tests: [{ name: 'error-isolation', prompt: 'hello', expect: {} }],
@@ -161,5 +173,64 @@ describe('runTests', () => {
     expect(okResult?.comparison.passed).toBe(true);
     expect(failResult?.comparison.passed).toBe(false);
     expect(failResult?.response.content).toContain('Provider execution failed');
+  });
+
+  it('preserves rate limit error type and retry_after_ms', async () => {
+    const providerName = `provider-rl-${randomUUID()}`;
+    registerProvider(providerName, {
+      name: providerName,
+      execute: () => Promise.reject(new RateLimitError(providerName, 5000)),
+    });
+
+    const config: PromptCanaryConfig = {
+      version: '1',
+      config: {
+        providers: [{ name: providerName, model: 'model', api_key_env: 'K', timeout_ms: 1000 }],
+      },
+      tests: [{ name: 'rl-test', prompt: 'hello', expect: {} }],
+    };
+
+    const results = await runTests({ config });
+    expect(results[0].response.error_type).toBe('rate_limit');
+    expect(results[0].response.retry_after_ms).toBe(5000);
+  });
+
+  it('preserves timeout error type', async () => {
+    const providerName = `provider-to-${randomUUID()}`;
+    registerProvider(providerName, {
+      name: providerName,
+      execute: () => Promise.reject(new TimeoutError(providerName, 30000)),
+    });
+
+    const config: PromptCanaryConfig = {
+      version: '1',
+      config: {
+        providers: [{ name: providerName, model: 'model', api_key_env: 'K', timeout_ms: 1000 }],
+      },
+      tests: [{ name: 'to-test', prompt: 'hello', expect: {} }],
+    };
+
+    const results = await runTests({ config });
+    expect(results[0].response.error_type).toBe('timeout');
+    expect(results[0].response.retry_after_ms).toBeUndefined();
+  });
+
+  it('classifies auth errors from ProviderError', async () => {
+    const providerName = `provider-auth-${randomUUID()}`;
+    registerProvider(providerName, {
+      name: providerName,
+      execute: () => Promise.reject(new ProviderError('Invalid API key', providerName)),
+    });
+
+    const config: PromptCanaryConfig = {
+      version: '1',
+      config: {
+        providers: [{ name: providerName, model: 'model', api_key_env: 'K', timeout_ms: 1000 }],
+      },
+      tests: [{ name: 'auth-test', prompt: 'hello', expect: {} }],
+    };
+
+    const results = await runTests({ config });
+    expect(results[0].response.error_type).toBe('auth');
   });
 });

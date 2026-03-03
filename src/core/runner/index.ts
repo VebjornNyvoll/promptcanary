@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import type {
   ComparisonResult,
+  ErrorType,
   LLMResponse,
   PromptCanaryConfig,
   ProviderConfig,
   RunResult,
 } from '../../types/index.js';
+import { ProviderError, RateLimitError, TimeoutError } from '../../types/index.js';
 import { createProvider } from './providers/base.js';
 
 export interface RunTestsOptions {
@@ -22,7 +24,13 @@ export async function runTests(options: RunTestsOptions): Promise<RunResult[]> {
     const providerRuns = providerNames.map((providerName) => {
       const providerConfig = options.config.config.providers.find((p) => p.name === providerName);
 
-      return runProviderTest(testCase.name, testCase.prompt, providerName, providerConfig, options.onProgress);
+      return runProviderTest(
+        testCase.name,
+        testCase.prompt,
+        providerName,
+        providerConfig,
+        options.onProgress,
+      );
     });
 
     const settled = await Promise.allSettled(providerRuns);
@@ -108,7 +116,25 @@ function pendingComparison(): ComparisonResult {
   };
 }
 
+function classifyError(error: unknown): { error_type: ErrorType; retry_after_ms?: number } {
+  if (error instanceof RateLimitError) {
+    return { error_type: 'rate_limit', retry_after_ms: error.retry_after_ms };
+  }
+  if (error instanceof TimeoutError) {
+    return { error_type: 'timeout' };
+  }
+  if (error instanceof ProviderError) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes('auth') || msg.includes('api key') || msg.includes('401')) {
+      return { error_type: 'auth' };
+    }
+    return { error_type: 'provider' };
+  }
+  return { error_type: 'unknown' };
+}
+
 function errorResponse(provider: string, model: string, error: unknown): LLMResponse {
+  const { error_type, retry_after_ms } = classifyError(error);
   return {
     content: `Provider execution failed: ${getErrorMessage(error)}`,
     model,
@@ -119,6 +145,8 @@ function errorResponse(provider: string, model: string, error: unknown): LLMResp
       completion: 0,
     },
     timestamp: new Date(),
+    error_type,
+    retry_after_ms,
   };
 }
 
