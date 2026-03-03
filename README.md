@@ -323,6 +323,38 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
+## Troubleshooting
+
+### Native module: better-sqlite3
+
+PromptCanary uses [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) for local result storage. It ships prebuilt binaries for most platforms, but you may need extra steps in some environments.
+
+**Prebuilt binaries fail to download:**
+
+```bash
+# Force rebuild from source (requires Python 3 and a C++ compiler)
+npm rebuild better-sqlite3
+```
+
+**Alpine Linux / Docker (musl libc):**
+
+```dockerfile
+RUN apk add --no-cache python3 make g++
+RUN npm install
+```
+
+**CI environments (GitHub Actions):**
+
+The CI matrix already tests on ubuntu, windows, and macOS with Node 20 and 22. If you use a custom runner, ensure `python3`, `make`, and a C++ toolchain are available.
+
+**Windows:**
+
+Install the "Desktop development with C++" workload from Visual Studio Build Tools, or run:
+
+```bash
+npm install --global windows-build-tools
+```
+
 ## How It Works
 
 1. PromptCanary loads your YAML test cases and provider settings.
