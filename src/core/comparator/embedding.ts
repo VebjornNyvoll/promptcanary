@@ -33,23 +33,45 @@ export function contentHash(text: string): string {
   return createHash('sha256').update(text).digest('hex');
 }
 
-/**
- * Embedding cache — stores embeddings in memory with content hash keys.
- * Can be backed by SQLite storage for persistence.
- */
+export interface EmbeddingCacheBacking {
+  getCachedEmbedding(hash: string): number[] | undefined;
+  cacheEmbedding(hash: string, embedding: number[], model: string): void;
+}
+
 export class EmbeddingCache {
   private cache = new Map<string, number[]>();
+  private backing?: EmbeddingCacheBacking;
+  private model: string;
+
+  constructor(backing?: EmbeddingCacheBacking, model = 'text-embedding-3-small') {
+    this.backing = backing;
+    this.model = model;
+  }
 
   get(text: string): number[] | undefined {
-    return this.cache.get(contentHash(text));
+    const hash = contentHash(text);
+    const memCached = this.cache.get(hash);
+    if (memCached) return memCached;
+
+    if (this.backing) {
+      const persisted = this.backing.getCachedEmbedding(hash);
+      if (persisted) {
+        this.cache.set(hash, persisted);
+        return persisted;
+      }
+    }
+
+    return undefined;
   }
 
   set(text: string, embedding: number[]): void {
-    this.cache.set(contentHash(text), embedding);
+    const hash = contentHash(text);
+    this.cache.set(hash, embedding);
+    this.backing?.cacheEmbedding(hash, embedding, this.model);
   }
 
   has(text: string): boolean {
-    return this.cache.has(contentHash(text));
+    return this.get(text) !== undefined;
   }
 
   clear(): void {

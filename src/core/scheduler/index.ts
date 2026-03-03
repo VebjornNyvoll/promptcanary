@@ -32,7 +32,7 @@ export function startScheduler(options: SchedulerOptions): { stop: () => void } 
   }
 
   const storage = new Storage(dbPath);
-  const embeddingCache = new EmbeddingCache();
+  const embeddingCache = new EmbeddingCache(storage);
 
   let isRunning = false;
 

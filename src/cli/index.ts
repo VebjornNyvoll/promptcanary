@@ -119,7 +119,7 @@ program
     try {
       const config = loadConfig(file);
       storage = new Storage();
-      const embeddingCache = new EmbeddingCache();
+      const embeddingCache = new EmbeddingCache(storage);
       const embeddingFetcher = createEmbeddingFetcher(config);
 
       const runResults = await runTests({
