@@ -35,9 +35,68 @@ export interface StoredAlert {
   success: boolean;
 }
 
-/**
- * SQLite storage for PromptCanary results, comparisons, and alerts.
- */
+export interface Migration {
+  version: number;
+  up(db: Database.Database): void;
+}
+
+export const migrations: Migration[] = [
+  {
+    version: 1,
+    up(db: Database.Database): void {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS runs (
+          id TEXT PRIMARY KEY,
+          test_name TEXT NOT NULL,
+          provider TEXT NOT NULL,
+          model TEXT NOT NULL,
+          prompt TEXT NOT NULL,
+          response TEXT NOT NULL,
+          latency_ms INTEGER NOT NULL,
+          token_usage_prompt INTEGER DEFAULT 0,
+          token_usage_completion INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS comparisons (
+          id TEXT PRIMARY KEY,
+          run_id TEXT NOT NULL REFERENCES runs(id),
+          passed INTEGER NOT NULL,
+          severity TEXT NOT NULL,
+          semantic_score REAL,
+          details TEXT NOT NULL,
+          assertions_json TEXT NOT NULL,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS embeddings_cache (
+          id TEXT PRIMARY KEY,
+          content_hash TEXT NOT NULL UNIQUE,
+          embedding BLOB NOT NULL,
+          model TEXT NOT NULL,
+          created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS alerts (
+          id TEXT PRIMARY KEY,
+          run_id TEXT NOT NULL REFERENCES runs(id),
+          channel TEXT NOT NULL,
+          payload TEXT NOT NULL,
+          sent_at TEXT DEFAULT (datetime('now')),
+          success INTEGER NOT NULL
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_runs_test_name ON runs(test_name);
+        CREATE INDEX IF NOT EXISTS idx_runs_provider ON runs(provider);
+        CREATE INDEX IF NOT EXISTS idx_runs_created_at ON runs(created_at);
+        CREATE INDEX IF NOT EXISTS idx_comparisons_run_id ON comparisons(run_id);
+        CREATE INDEX IF NOT EXISTS idx_embeddings_hash ON embeddings_cache(content_hash);
+        CREATE INDEX IF NOT EXISTS idx_alerts_run_id ON alerts(run_id);
+      `);
+    },
+  },
+];
+
 export class Storage {
   private db: Database.Database;
 
@@ -45,59 +104,46 @@ export class Storage {
     this.db = new Database(dbPath);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
-    this.initialize();
+    this.runMigrations();
   }
 
-  private initialize(): void {
+  getSchemaVersion(): number {
+    const tableExists = this.db
+      .prepare(
+        "SELECT COUNT(*) as count FROM sqlite_master WHERE type='table' AND name='schema_version'",
+      )
+      .get() as { count: number };
+
+    if (tableExists.count === 0) return 0;
+
+    const row = this.db
+      .prepare('SELECT version FROM schema_version ORDER BY version DESC LIMIT 1')
+      .get() as { version: number } | undefined;
+
+    return row?.version ?? 0;
+  }
+
+  private runMigrations(): void {
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS runs (
-        id TEXT PRIMARY KEY,
-        test_name TEXT NOT NULL,
-        provider TEXT NOT NULL,
-        model TEXT NOT NULL,
-        prompt TEXT NOT NULL,
-        response TEXT NOT NULL,
-        latency_ms INTEGER NOT NULL,
-        token_usage_prompt INTEGER DEFAULT 0,
-        token_usage_completion INTEGER DEFAULT 0,
-        created_at TEXT DEFAULT (datetime('now'))
-      );
-
-      CREATE TABLE IF NOT EXISTS comparisons (
-        id TEXT PRIMARY KEY,
-        run_id TEXT NOT NULL REFERENCES runs(id),
-        passed INTEGER NOT NULL,
-        severity TEXT NOT NULL,
-        semantic_score REAL,
-        details TEXT NOT NULL,
-        assertions_json TEXT NOT NULL,
-        created_at TEXT DEFAULT (datetime('now'))
-      );
-
-      CREATE TABLE IF NOT EXISTS embeddings_cache (
-        id TEXT PRIMARY KEY,
-        content_hash TEXT NOT NULL UNIQUE,
-        embedding BLOB NOT NULL,
-        model TEXT NOT NULL,
-        created_at TEXT DEFAULT (datetime('now'))
-      );
-
-      CREATE TABLE IF NOT EXISTS alerts (
-        id TEXT PRIMARY KEY,
-        run_id TEXT NOT NULL REFERENCES runs(id),
-        channel TEXT NOT NULL,
-        payload TEXT NOT NULL,
-        sent_at TEXT DEFAULT (datetime('now')),
-        success INTEGER NOT NULL
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_runs_test_name ON runs(test_name);
-      CREATE INDEX IF NOT EXISTS idx_runs_provider ON runs(provider);
-      CREATE INDEX IF NOT EXISTS idx_runs_created_at ON runs(created_at);
-      CREATE INDEX IF NOT EXISTS idx_comparisons_run_id ON comparisons(run_id);
-      CREATE INDEX IF NOT EXISTS idx_embeddings_hash ON embeddings_cache(content_hash);
-      CREATE INDEX IF NOT EXISTS idx_alerts_run_id ON alerts(run_id);
+      CREATE TABLE IF NOT EXISTS schema_version (
+        version INTEGER PRIMARY KEY,
+        applied_at TEXT DEFAULT (datetime('now'))
+      )
     `);
+
+    const currentVersion = this.getSchemaVersion();
+    const pending = migrations.filter((m) => m.version > currentVersion);
+
+    if (pending.length === 0) return;
+
+    const applyAll = this.db.transaction(() => {
+      for (const migration of pending) {
+        migration.up(this.db);
+        this.db.prepare('INSERT INTO schema_version (version) VALUES (?)').run(migration.version);
+      }
+    });
+
+    applyAll();
   }
 
   /**

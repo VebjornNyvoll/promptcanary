@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { unlinkSync, existsSync } from 'node:fs';
-import { Storage } from '../../src/storage/index.js';
+import Database from 'better-sqlite3';
+import { Storage, migrations } from '../../src/storage/index.js';
 import type { RunResult } from '../../src/types/index.js';
 
 const TEST_DB = 'test-promptcanary.db';
@@ -176,6 +177,66 @@ describe('Storage', () => {
       expect(storage.wasAlertSentRecently('Test', 'openai', 'slack')).toBe(true);
       expect(storage.wasAlertSentRecently('Test', 'openai', 'webhook')).toBe(false);
       expect(storage.wasAlertSentRecently('Other', 'openai', 'slack')).toBe(false);
+    });
+  });
+
+  describe('schema migrations', () => {
+    it('creates schema_version table on fresh database', () => {
+      const version = storage.getSchemaVersion();
+      expect(version).toBe(migrations.length);
+    });
+
+    it('applies migrations to a pre-existing v0 database', () => {
+      storage.close();
+      if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
+
+      const raw = new Database(TEST_DB);
+      raw.pragma('journal_mode = WAL');
+      raw.exec(`
+        CREATE TABLE runs (
+          id TEXT PRIMARY KEY,
+          test_name TEXT NOT NULL,
+          provider TEXT NOT NULL,
+          model TEXT NOT NULL,
+          prompt TEXT NOT NULL,
+          response TEXT NOT NULL,
+          latency_ms INTEGER NOT NULL,
+          token_usage_prompt INTEGER DEFAULT 0,
+          token_usage_completion INTEGER DEFAULT 0,
+          created_at TEXT DEFAULT (datetime('now'))
+        )
+      `);
+      raw
+        .prepare(
+          'INSERT INTO runs (id, test_name, provider, model, prompt, response, latency_ms) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        )
+        .run('old-run', 'Legacy Test', 'openai', 'gpt-4', 'hello', 'world', 100);
+      raw.close();
+
+      const migrated = new Storage(TEST_DB);
+      expect(migrated.getSchemaVersion()).toBe(migrations.length);
+
+      const runs = migrated.getRuns();
+      expect(runs).toHaveLength(1);
+      expect(runs[0].test_name).toBe('Legacy Test');
+      migrated.close();
+    });
+
+    it('skips already-applied migrations', () => {
+      storage.close();
+      if (existsSync(TEST_DB)) unlinkSync(TEST_DB);
+
+      const first = new Storage(TEST_DB);
+      first.saveRun('Test', 'prompt', makeRunResult());
+      first.close();
+
+      const second = new Storage(TEST_DB);
+      expect(second.getSchemaVersion()).toBe(migrations.length);
+      const runs = second.getRuns();
+      expect(runs).toHaveLength(1);
+      second.close();
+
+      storage = new Storage(TEST_DB);
     });
   });
 });
