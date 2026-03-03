@@ -1,46 +1,77 @@
 {
   "name": "promptcanary",
   "version": "0.1.0",
+  "description": "Uptime monitoring for AI behavior. Catch model drift before your users do.",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "promptcanary": "./dist/cli/index.js"
   },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/VebjornNyvoll/promptcanary.git"
+  },
+  "keywords": [
+    "llm",
+    "monitoring",
+    "prompt-testing",
+    "ai",
+    "drift-detection",
+    "openai",
+    "anthropic"
+  ],
+  "files": [
+    "dist",
+    "examples",
+    "README.md",
+    "LICENSE",
+    ".env.example"
+  ],
   "scripts": {
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "build": "tsup",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm run build && pnpm run test && pnpm run lint"
   },
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "latest",
-    "better-sqlite3": "latest",
-    "commander": "latest",
+    "@anthropic-ai/sdk": "^0.78.0",
+    "better-sqlite3": "^12.6.2",
+    "commander": "^14.0.3",
     "dotenv": "^17.3.1",
-    "node-cron": "latest",
-    "nodemailer": "latest",
-    "openai": "latest",
-    "uuid": "latest",
-    "yaml": "latest",
-    "zod": "latest"
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.1",
+    "openai": "^6.25.0",
+    "uuid": "^13.0.0",
+    "yaml": "^2.8.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@eslint/js": "latest",
-    "@types/better-sqlite3": "latest",
-    "@types/node": "latest",
-    "@types/node-cron": "latest",
-    "@types/nodemailer": "latest",
-    "@types/uuid": "latest",
-    "eslint": "latest",
-    "eslint-config-prettier": "latest",
-    "prettier": "latest",
-    "tsup": "latest",
-    "typescript": "latest",
-    "typescript-eslint": "latest",
-    "vitest": "latest"
+    "@eslint/js": "^10.0.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.3.3",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^7.0.11",
+    "@types/uuid": "^11.0.0",
+    "eslint": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.8.1",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.1",
+    "vitest": "^4.0.18"
   }
 }
