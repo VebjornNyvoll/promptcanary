@@ -1,0 +1,45 @@
+{
+  "name": "promptcanary",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "promptcanary": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "build": "tsup",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "latest",
+    "better-sqlite3": "latest",
+    "commander": "latest",
+    "node-cron": "latest",
+    "nodemailer": "latest",
+    "openai": "latest",
+    "uuid": "latest",
+    "yaml": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@types/better-sqlite3": "latest",
+    "@types/node": "latest",
+    "@types/node-cron": "latest",
+    "@types/nodemailer": "latest",
+    "@types/uuid": "latest",
+    "eslint": "latest",
+    "eslint-config-prettier": "latest",
+    "prettier": "latest",
+    "tsup": "latest",
+    "typescript": "latest",
+    "typescript-eslint": "latest",
+    "vitest": "latest"
+  }
+}
