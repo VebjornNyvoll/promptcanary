@@ -31,3 +31,12 @@ export type {
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
+
+// Core exports
+export { runTests } from './core/runner/index.js';
+export { compareResponse } from './core/comparator/index.js';
+export { startScheduler, executeRun } from './core/scheduler/index.js';
+export { dispatchAlerts, createAlertChannels } from './core/alerting/index.js';
+
+// Storage exports
+export { Storage } from './storage/index.js';
