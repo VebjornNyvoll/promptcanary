@@ -2,6 +2,10 @@
   "name": "promptcanary",
   "version": "0.1.0",
   "description": "Uptime monitoring for AI behavior. Catch model drift before your users do.",
+  "author": {
+    "name": "Vebjørn Nyvoll",
+    "url": "https://github.com/VebjornNyvoll"
+  },
   "license": "MIT",
   "type": "module",
   "bin": {
@@ -26,13 +30,20 @@
     "ai",
     "drift-detection",
     "openai",
-    "anthropic"
+    "anthropic",
+    "google",
+    "gemini"
   ],
+  "homepage": "https://github.com/VebjornNyvoll/promptcanary#readme",
+  "bugs": {
+    "url": "https://github.com/VebjornNyvoll/promptcanary/issues"
+  },
   "files": [
     "dist",
     "examples",
     "README.md",
     "LICENSE",
+    "CHANGELOG.md",
     ".env.example"
   ],
   "scripts": {
@@ -49,11 +60,11 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
+    "@google/genai": "^1.43.0",
     "better-sqlite3": "^12.6.2",
     "commander": "^14.0.3",
     "dotenv": "^17.3.1",
     "node-cron": "^4.2.1",
-    "nodemailer": "^8.0.1",
     "openai": "^6.25.0",
     "uuid": "^13.0.0",
     "yaml": "^2.8.2",
@@ -64,7 +75,6 @@
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.3.3",
     "@types/node-cron": "^3.0.11",
-    "@types/nodemailer": "^7.0.11",
     "@types/uuid": "^11.0.0",
     "eslint": "^10.0.2",
     "eslint-config-prettier": "^10.1.8",

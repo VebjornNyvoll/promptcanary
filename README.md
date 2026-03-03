@@ -225,6 +225,16 @@ promptcanary results --last 25
 
 Defaults to the latest 10 runs.
 
+### `promptcanary cleanup`
+
+Remove old test runs and cached data to reclaim disk space.
+
+```bash
+promptcanary cleanup                    # Delete runs older than 30 days
+promptcanary cleanup --older-than 90    # Delete runs older than 90 days
+promptcanary cleanup --dry-run          # Preview what would be deleted
+```
+
 ## Providers
 
 ### OpenAI
@@ -263,7 +273,25 @@ Defaults to the latest 10 runs.
          api_key_env: ANTHROPIC_API_KEY
    ```
 
-You can run the same test suite across both providers to detect portability issues and provider-specific drift.
+### Google Gemini
+
+1. Export your API key:
+
+   ```bash
+   export GOOGLE_API_KEY="your-key"
+   ```
+
+2. Configure provider entry:
+
+   ```yaml
+   config:
+     providers:
+       - name: google
+         model: gemini-2.0-flash
+         api_key_env: GOOGLE_API_KEY
+   ```
+
+You can run the same test suite across all providers to detect portability issues and provider-specific drift.
 
 ## Alerting
 

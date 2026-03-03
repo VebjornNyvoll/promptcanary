@@ -17,7 +17,7 @@ describe('loadConfig', () => {
 
   it('loads and validates multi-provider.yaml', () => {
     const config = loadConfig(resolve(EXAMPLES_DIR, 'multi-provider.yaml'));
-    expect(config.config.providers).toHaveLength(2);
+    expect(config.config.providers).toHaveLength(3);
     expect(config.tests).toHaveLength(2);
   });
 

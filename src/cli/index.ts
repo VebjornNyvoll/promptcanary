@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config as dotenvConfig } from 'dotenv';
 import { Command, InvalidArgumentError } from 'commander';
+import type Database from 'better-sqlite3';
 import type { PromptCanaryConfig, RunResult } from '../types/index.js';
 import { VERSION } from '../index.js';
 import { loadConfig } from '../schema/loader.js';
@@ -16,11 +17,12 @@ import {
   type EmbeddingFetcher,
 } from '../core/comparator/index.js';
 import { startScheduler } from '../core/scheduler/index.js';
-import { Storage } from '../storage/index.js';
+import { Storage, type StorageStats } from '../storage/index.js';
 
 // Import providers for side-effect registration
 import '../core/runner/providers/openai.js';
 import '../core/runner/providers/anthropic.js';
+import '../core/runner/providers/google.js';
 
 const ansi = {
   green: '\x1b[32m',
@@ -236,6 +238,51 @@ program
     }
   });
 
+program
+  .command('cleanup')
+  .description('Remove old runs and stale cached embeddings from SQLite storage')
+  .option(
+    '--older-than <days>',
+    'Delete runs older than N days (default: 30)',
+    parsePositiveInt,
+    30,
+  )
+  .option('--dry-run', 'Show what would be deleted without deleting data', false)
+  .action((options: { olderThan: number; dryRun: boolean }) => {
+    const storage = new Storage();
+    try {
+      const before = storage.getStats();
+      printInfo('Current database stats:');
+      printStorageStats(before);
+
+      if (options.dryRun) {
+        const preview = countCleanupCandidates(storage, options.olderThan);
+        printInfo('');
+        printInfo(
+          `Dry run: would delete ${formatCount(preview.runs)} runs (and associated comparisons/alerts) older than ${String(options.olderThan)} days.`,
+        );
+        printInfo(`Dry run: would delete ${formatCount(preview.embeddings)} orphaned embeddings.`);
+        return;
+      }
+
+      const deletedRuns = storage.deleteRunsOlderThan(options.olderThan);
+      const deletedEmbeddings = storage.deleteOrphanedEmbeddings();
+
+      printInfo('');
+      printInfo(
+        `Deleted ${formatCount(deletedRuns)} runs (and associated comparisons/alerts) older than ${String(options.olderThan)} days.`,
+      );
+      printInfo(`Deleted ${formatCount(deletedEmbeddings)} orphaned embeddings.`);
+
+      const after = storage.getStats();
+      printInfo('');
+      printInfo('After cleanup:');
+      printStorageStats(after);
+    } finally {
+      storage.close();
+    }
+  });
+
 void program.parseAsync(process.argv);
 
 function printInfo(message: string): void {
@@ -381,4 +428,55 @@ function truncate(input: string, maxLength: number): string {
     return input;
   }
   return `${input.slice(0, maxLength - 3)}...`;
+}
+
+function printStorageStats(stats: StorageStats): void {
+  printInfo(`  Runs: ${formatCount(stats.runs)}`);
+  printInfo(`  Comparisons: ${formatCount(stats.comparisons)}`);
+  printInfo(`  Alerts: ${formatCount(stats.alerts)}`);
+  printInfo(`  Cached embeddings: ${formatCount(stats.embeddings)}`);
+  printInfo(`  Database size: ${formatBytes(stats.dbSizeBytes)}`);
+}
+
+function countCleanupCandidates(
+  storage: Storage,
+  olderThanDays: number,
+): { runs: number; embeddings: number } {
+  const db = (storage as unknown as { db: Database.Database }).db;
+  const runs = db
+    .prepare(
+      `SELECT COUNT(*) as count
+       FROM runs
+       WHERE created_at < datetime('now', '-' || ? || ' days')`,
+    )
+    .get(olderThanDays) as { count: number };
+  const embeddings = db
+    .prepare(
+      "SELECT COUNT(*) as count FROM embeddings_cache WHERE created_at < datetime('now', '-90 days')",
+    )
+    .get() as { count: number };
+
+  return {
+    runs: runs.count,
+    embeddings: embeddings.count,
+  };
+}
+
+function formatCount(value: number): string {
+  return value.toLocaleString('en-US');
+}
+
+function formatBytes(bytes: number): string {
+  const kilobyte = 1024;
+  const megabyte = kilobyte * kilobyte;
+
+  if (bytes >= megabyte) {
+    return `${(bytes / megabyte).toFixed(1)} MB`;
+  }
+
+  if (bytes >= kilobyte) {
+    return `${(bytes / kilobyte).toFixed(1)} KB`;
+  }
+
+  return `${String(bytes)} B`;
 }

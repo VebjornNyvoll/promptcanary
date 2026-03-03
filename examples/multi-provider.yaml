@@ -1,6 +1,5 @@
 # Multi-provider PromptCanary test configuration
-# Tests prompts across OpenAI and Anthropic for cross-provider portability
-version: "1"
+version: '1'
 
 config:
   providers:
@@ -14,9 +13,15 @@ config:
       api_key_env: ANTHROPIC_API_KEY
       temperature: 0.2
 
+    - name: google
+      model: gemini-2.0-flash
+      api_key_env: GOOGLE_API_KEY
+      temperature: 0.2
+
 tests:
-  - name: "Summarization quality"
-    prompt: "Summarize the following in 3 bullet points: {{article}}"
+  - name: 'Summarization quality'
+    prompt: 'Summarize the following in 3 bullet points: {{article}}'
+    providers: ['openai', 'anthropic', 'google']
     variables:
       article: >
         NASA's James Webb Space Telescope has captured unprecedented images of
@@ -27,13 +32,13 @@ tests:
     expect:
       format: bullet_points
       max_length: 500
-      must_contain: ["James Webb", "galaxies"]
-      must_not_contain: ["error"]
+      must_contain: ['James Webb', 'galaxies']
+      must_not_contain: ['error']
 
-  - name: "Code generation consistency"
-    prompt: "Write a Python function that reverses a string"
-    providers: ["openai"]  # Only test with OpenAI for this case
+  - name: 'Code generation consistency'
+    prompt: 'Write a Python function that reverses a string'
+    providers: ['openai'] # Only test with OpenAI for this case
     expect:
-      must_contain: ["def ", "return"]
-      must_not_contain: ["TODO", "pass  #"]
+      must_contain: ['def ', 'return']
+      must_not_contain: ['TODO', 'pass  #']
       max_length: 500

@@ -180,6 +180,84 @@ describe('Storage', () => {
     });
   });
 
+  describe('cleanup', () => {
+    it('deleteRunsOlderThan removes old runs and cascades', () => {
+      storage.saveRun('old-test', 'prompt', makeRunResult({ run_id: 'old-run-id' }));
+      storage.saveAlert('old-run-id', 'slack', { scope: 'old' }, true);
+
+      const db = (storage as unknown as { db: Database.Database }).db;
+      db.prepare(
+        "UPDATE runs SET created_at = datetime('now', '-60 days') WHERE test_name = ?",
+      ).run('old-test');
+
+      const deleted = storage.deleteRunsOlderThan(30);
+
+      expect(deleted).toBe(1);
+      expect(storage.getRuns({ testName: 'old-test' })).toHaveLength(0);
+      expect(storage.getComparison('old-run-id')).toBeUndefined();
+      expect(storage.getAlerts()).toHaveLength(0);
+    });
+
+    it('deleteRunsOlderThan preserves recent runs', () => {
+      storage.saveRun('recent-test', 'prompt', makeRunResult({ run_id: 'recent-run-id' }));
+
+      const deleted = storage.deleteRunsOlderThan(30);
+
+      expect(deleted).toBe(0);
+      expect(storage.getRuns({ testName: 'recent-test' })).toHaveLength(1);
+      expect(storage.getComparison('recent-run-id')).toBeDefined();
+    });
+
+    it('deleteRunsOlderThan returns count of deleted runs', () => {
+      storage.saveRun('old-a', 'prompt', makeRunResult({ run_id: 'old-run-a' }));
+      storage.saveRun('old-b', 'prompt', makeRunResult({ run_id: 'old-run-b' }));
+      storage.saveRun('recent-c', 'prompt', makeRunResult({ run_id: 'recent-run-c' }));
+
+      const db = (storage as unknown as { db: Database.Database }).db;
+      db.prepare(
+        "UPDATE runs SET created_at = datetime('now', '-45 days') WHERE test_name IN (?, ?)",
+      ).run('old-a', 'old-b');
+
+      const deleted = storage.deleteRunsOlderThan(30);
+
+      expect(deleted).toBe(2);
+      expect(storage.getRuns()).toHaveLength(1);
+      expect(storage.getRuns()[0].test_name).toBe('recent-c');
+    });
+
+    it('deleteOrphanedEmbeddings removes old cache entries', () => {
+      storage.cacheEmbedding('old-hash', [0.1, 0.2], 'text-embedding-3-small');
+      storage.cacheEmbedding('recent-hash', [0.3, 0.4], 'text-embedding-3-small');
+
+      const db = (storage as unknown as { db: Database.Database }).db;
+      db.prepare(
+        "UPDATE embeddings_cache SET created_at = datetime('now', '-120 days') WHERE content_hash = ?",
+      ).run('old-hash');
+
+      const deleted = storage.deleteOrphanedEmbeddings();
+
+      expect(deleted).toBe(1);
+      expect(storage.getCachedEmbedding('old-hash')).toBeUndefined();
+      expect(storage.getCachedEmbedding('recent-hash')).toBeDefined();
+    });
+
+    it('getStats returns correct counts', () => {
+      storage.saveRun('stats-a', 'prompt', makeRunResult({ run_id: 'stats-run-a' }));
+      storage.saveRun('stats-b', 'prompt', makeRunResult({ run_id: 'stats-run-b' }));
+      storage.saveAlert('stats-run-a', 'slack', { key: 'value' }, true);
+      storage.cacheEmbedding('stats-hash-a', [0.11, 0.22], 'text-embedding-3-small');
+      storage.cacheEmbedding('stats-hash-b', [0.33, 0.44], 'text-embedding-3-small');
+
+      const stats = storage.getStats();
+
+      expect(stats.runs).toBe(2);
+      expect(stats.comparisons).toBe(2);
+      expect(stats.alerts).toBe(1);
+      expect(stats.embeddings).toBe(2);
+      expect(stats.dbSizeBytes).toBeGreaterThan(0);
+    });
+  });
+
   describe('schema migrations', () => {
     it('creates schema_version table on fresh database', () => {
       const version = storage.getSchemaVersion();
