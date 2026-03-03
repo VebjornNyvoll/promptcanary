@@ -7,9 +7,7 @@ import { ProviderError } from '../../types/index.js';
  */
 export function cosineSimilarity(a: number[], b: number[]): number {
   if (a.length !== b.length) {
-    throw new Error(
-      `Vector dimension mismatch: ${String(a.length)} vs ${String(b.length)}`,
-    );
+    throw new Error(`Vector dimension mismatch: ${String(a.length)} vs ${String(b.length)}`);
   }
 
   let dotProduct = 0;
@@ -71,11 +69,19 @@ export interface EmbeddingFetcher {
   fetchEmbedding(text: string): Promise<number[]>;
 }
 
+/** Default timeout for embedding API calls (30 seconds). */
+const DEFAULT_EMBEDDING_TIMEOUT_MS = 30_000;
+
 export class OpenAIEmbeddingFetcher implements EmbeddingFetcher {
   private readonly apiKey: string;
   private readonly model: string;
+  private readonly timeoutMs: number;
 
-  constructor(apiKeyEnv: string, model = 'text-embedding-3-small') {
+  constructor(
+    apiKeyEnv: string,
+    model = 'text-embedding-3-small',
+    timeoutMs = DEFAULT_EMBEDDING_TIMEOUT_MS,
+  ) {
     const key = process.env[apiKeyEnv];
     if (!key) {
       throw new ProviderError(
@@ -85,6 +91,7 @@ export class OpenAIEmbeddingFetcher implements EmbeddingFetcher {
     }
     this.apiKey = key;
     this.model = model;
+    this.timeoutMs = timeoutMs;
   }
 
   async fetchEmbedding(text: string): Promise<number[]> {
@@ -98,6 +105,7 @@ export class OpenAIEmbeddingFetcher implements EmbeddingFetcher {
         input: text,
         model: this.model,
       }),
+      signal: AbortSignal.timeout(this.timeoutMs),
     });
 
     if (!response.ok) {
