@@ -6,7 +6,10 @@ import {
   computeSemanticSimilarity,
   OpenAIEmbeddingFetcher,
 } from '../../../src/core/comparator/embedding.js';
-import type { EmbeddingFetcher } from '../../../src/core/comparator/embedding.js';
+import type {
+  EmbeddingFetcher,
+  EmbeddingCacheBacking,
+} from '../../../src/core/comparator/embedding.js';
 
 describe('cosineSimilarity', () => {
   it('returns 1 for identical vectors', () => {
@@ -87,6 +90,46 @@ describe('EmbeddingCache', () => {
     cache.set('b', [2]);
     cache.clear();
     expect(cache.size).toBe(0);
+  });
+
+  it('falls back to backing store on memory miss', () => {
+    const backing: EmbeddingCacheBacking = {
+      getCachedEmbedding: vi.fn().mockReturnValue([4, 5, 6]),
+      cacheEmbedding: vi.fn(),
+    };
+
+    const cache = new EmbeddingCache(backing);
+    const result = cache.get('persisted-text');
+    expect(result).toEqual([4, 5, 6]);
+    expect(backing.getCachedEmbedding).toHaveBeenCalledOnce();
+  });
+
+  it('writes through to backing store on set', () => {
+    const backing: EmbeddingCacheBacking = {
+      getCachedEmbedding: vi.fn(),
+      cacheEmbedding: vi.fn(),
+    };
+
+    const cache = new EmbeddingCache(backing, 'test-model');
+    cache.set('new-text', [7, 8, 9]);
+    expect(backing.cacheEmbedding).toHaveBeenCalledOnce();
+    expect(backing.cacheEmbedding).toHaveBeenCalledWith(
+      contentHash('new-text'),
+      [7, 8, 9],
+      'test-model',
+    );
+  });
+
+  it('promotes backing store hit to memory', () => {
+    const backing: EmbeddingCacheBacking = {
+      getCachedEmbedding: vi.fn().mockReturnValueOnce([1, 2, 3]).mockReturnValue(undefined),
+      cacheEmbedding: vi.fn(),
+    };
+
+    const cache = new EmbeddingCache(backing);
+    cache.get('text');
+    cache.get('text');
+    expect(backing.getCachedEmbedding).toHaveBeenCalledTimes(1);
   });
 });
 
