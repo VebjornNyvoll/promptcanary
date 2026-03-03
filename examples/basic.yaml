@@ -1,6 +1,6 @@
 # Basic PromptCanary test configuration
 # Tests a single prompt against one provider
-version: "1"
+version: '1'
 
 config:
   providers:
@@ -9,10 +9,10 @@ config:
       api_key_env: OPENAI_API_KEY
 
 tests:
-  - name: "Greeting response"
-    prompt: "Say hello in a professional way"
+  - name: 'Greeting response'
+    prompt: "Write a short, professional greeting that begins with the word 'Hello'"
     expect:
       max_length: 200
-      must_contain: ["hello"]
-      must_not_contain: ["error", "sorry", "I can't"]
-      tone: "professional"
+      must_contain: ['Hello']
+      must_not_contain: ['error', 'sorry', "I can't"]
+      tone: 'professional'
