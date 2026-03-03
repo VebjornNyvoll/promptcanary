@@ -13,6 +13,7 @@ export interface SchedulerOptions {
   onRunStart?: () => void;
   onRunComplete?: (passed: number, failed: number) => void;
   onError?: (error: Error) => void;
+  onWarning?: (message: string) => void;
 }
 
 /**
@@ -20,7 +21,7 @@ export interface SchedulerOptions {
  * Returns a stop function to gracefully shut down.
  */
 export function startScheduler(options: SchedulerOptions): { stop: () => void } {
-  const { config, dbPath, onRunStart, onRunComplete, onError } = options;
+  const { config, dbPath, onRunStart, onRunComplete, onError, onWarning } = options;
   const schedule = config.config.schedule;
 
   if (!schedule) {
@@ -39,7 +40,16 @@ export function startScheduler(options: SchedulerOptions): { stop: () => void } 
   const task = cron.schedule(schedule, () => {
     // Prevent overlapping runs
     if (isRunning) return;
-    void executeRun(config, storage, embeddingCache, isRunning, onRunStart, onRunComplete, onError)
+    void executeRun(
+      config,
+      storage,
+      embeddingCache,
+      isRunning,
+      onRunStart,
+      onRunComplete,
+      onError,
+      onWarning,
+    )
       .then(() => {
         isRunning = false;
       })
@@ -74,11 +84,11 @@ export async function executeRun(
   onRunStart?: () => void,
   onRunComplete?: (passed: number, failed: number) => void,
   onError?: (error: Error) => void,
+  onWarning?: (message: string) => void,
 ): Promise<{ passed: number; failed: number }> {
   onRunStart?.();
 
   try {
-    // Create embedding fetcher if configured
     let embeddingFetcher: EmbeddingFetcher | undefined;
     const embeddingConfig = config.config.embedding_provider;
     if (embeddingConfig) {
@@ -87,8 +97,11 @@ export async function executeRun(
           embeddingConfig.api_key_env,
           embeddingConfig.model,
         );
-      } catch {
-        // Embedding provider not configured — skip semantic checks
+      } catch (err) {
+        const reason = err instanceof Error ? err.message : String(err);
+        onWarning?.(
+          `Embedding provider failed to initialize: ${reason}. Semantic similarity checks will be skipped.`,
+        );
       }
     }
 

@@ -56,4 +56,28 @@ describe('executeRun', () => {
 
     expect(shouldSkipComparison).toBe(true);
   });
+
+  it('calls onWarning when embedding provider fails to initialize', async () => {
+    const config: PromptCanaryConfig = {
+      ...minimalConfig,
+      config: {
+        ...minimalConfig.config,
+        embedding_provider: {
+          api_key_env: 'NONEXISTENT_EMBEDDING_KEY_FOR_TEST',
+          model: 'text-embedding-3-small',
+        },
+      },
+    };
+
+    const storage = new Storage(':memory:');
+    const cache = new EmbeddingCache();
+    const onWarning = vi.fn();
+
+    await executeRun(config, storage, cache, false, undefined, undefined, undefined, onWarning);
+
+    expect(onWarning).toHaveBeenCalledOnce();
+    expect(onWarning.mock.calls[0][0]).toContain('Embedding provider failed to initialize');
+    expect(onWarning.mock.calls[0][0]).toContain('NONEXISTENT_EMBEDDING_KEY_FOR_TEST');
+    storage.close();
+  });
 });
