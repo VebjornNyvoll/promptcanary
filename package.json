@@ -1,7 +1,7 @@
 {
   "name": "promptcanary",
   "version": "0.1.0",
-  "description": "Uptime monitoring for AI behavior. Catch model drift before your users do.",
+  "description": "Test your LLM prompts like you test your code. Assertions, semantic similarity, and multi-provider testing for Vitest, Jest, and any test runner.",
   "author": {
     "name": "Vebjørn Nyvoll",
     "url": "https://github.com/VebjornNyvoll"
@@ -25,10 +25,14 @@
   },
   "keywords": [
     "llm",
-    "monitoring",
+    "testing",
     "prompt-testing",
+    "llm-testing",
+    "vitest",
+    "jest",
     "ai",
-    "drift-detection",
+    "assertions",
+    "semantic-similarity",
     "openai",
     "anthropic",
     "google",
