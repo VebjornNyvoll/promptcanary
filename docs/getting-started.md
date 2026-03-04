@@ -57,6 +57,49 @@ describe('refund policy prompt', () => {
 });
 ```
 
+Prefer Vitest when possible because it works natively with ESM. If your team uses Jest, this setup works with PromptCanary too:
+
+```bash
+npm install --save-dev promptcanary jest ts-jest @types/jest
+```
+
+```typescript
+// jest.config.ts
+import type { Config } from 'jest';
+
+const config: Config = {
+  preset: 'ts-jest/presets/default-esm',
+  testEnvironment: 'node',
+  extensionsToTreatAsEsm: ['.ts'],
+  transform: {
+    '^.+\\.tsx?$': ['ts-jest', { useESM: true }],
+  },
+};
+
+export default config;
+```
+
+```typescript
+// tests/prompts/refund-policy.jest.test.ts
+import { describe, expect, it } from '@jest/globals';
+import { testPrompt, assertions } from 'promptcanary';
+
+describe('refund policy prompt', () => {
+  it('mentions the 30-day window', async () => {
+    const result = await testPrompt({
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'What is our refund policy?' }],
+    });
+
+    expect(assertions.contains(result.content, '30 days').passed).toBe(true);
+    expect(assertions.maxLength(result.content, 500).passed).toBe(true);
+  });
+});
+```
+
+Jest setup note: PromptCanary is ESM-only, so configure Jest for ESM (`extensionsToTreatAsEsm: ['.ts']` plus a `transform` using `ts-jest` ESM support, or use `@swc/jest`). Depending on your Node/Jest version, you may also need `node --experimental-vm-modules` when running tests.
+
 ### What `testPrompt()` returns
 
 ```typescript
