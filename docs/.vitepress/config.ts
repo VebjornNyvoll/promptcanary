@@ -38,6 +38,7 @@ export default defineConfig({
           { text: 'Providers', link: '/providers' },
           { text: 'Assertions & Expectations', link: '/assertions' },
           { text: 'CI/CD Integration', link: '/ci-cd' },
+          { text: 'Comparison', link: '/comparison' },
           { text: 'Configuration (YAML)', link: '/configuration' },
         ],
       },
