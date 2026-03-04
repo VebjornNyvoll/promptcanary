@@ -64,24 +64,6 @@ Fix:
 - Check required top-level fields: `version`, `config.providers`, `tests`.
 - Ensure `min_length <= max_length` when both are set.
 
-### `monitor` fails on startup
-
-Likely cause:
-
-- Missing `config.schedule`, or invalid cron expression.
-
-Fix:
-
-- Add a valid five-field cron expression, for example `0 */6 * * *`.
-
-### Webhook alerts not arriving
-
-Check:
-
-- URL starts with `http://` or `https://`.
-- Destination endpoint accepts `application/json`.
-- Custom auth headers are configured correctly.
-
 ## FAQ
 
 ### Where is run data stored?
