@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress';
 
 export default defineConfig({
   title: 'PromptCanary',
-  description: 'Uptime monitoring for AI behavior. Catch model drift before your users do.',
+  description: 'Test your prompts like you test your code. Catch model drift before your users do.',
 
   base: '/promptcanary/',
 
@@ -35,25 +35,25 @@ export default defineConfig({
       {
         text: 'Guide',
         items: [
-          { text: 'Configuration', link: '/configuration' },
           { text: 'Providers', link: '/providers' },
           { text: 'Assertions & Expectations', link: '/assertions' },
-          { text: 'Alerting', link: '/alerting' },
-          { text: 'Continuous Monitoring', link: '/monitoring' },
           { text: 'CI/CD Integration', link: '/ci-cd' },
+          { text: 'Configuration (YAML)', link: '/configuration' },
         ],
       },
       {
         text: 'Reference',
         items: [
+          { text: 'API Reference', link: '/api' },
           { text: 'CLI Commands', link: '/cli' },
-          { text: 'Programmatic API', link: '/api' },
           { text: 'Configuration Schema', link: '/configuration-schema' },
         ],
       },
       {
         text: 'Advanced',
         items: [
+          { text: 'Continuous Monitoring', link: '/monitoring' },
+          { text: 'Alerting', link: '/alerting' },
           { text: 'Architecture', link: '/architecture' },
           { text: 'Troubleshooting', link: '/troubleshooting' },
           { text: 'Changelog', link: '/changelog' },
