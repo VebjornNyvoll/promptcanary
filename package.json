@@ -45,6 +45,8 @@
   "files": [
     "dist",
     "examples",
+    "examples/template.vitest.ts",
+    "examples/template.jest.ts",
     "README.md",
     "LICENSE",
     "CHANGELOG.md",
