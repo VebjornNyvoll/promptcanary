@@ -17,9 +17,6 @@ config:
       temperature: 0.1
       max_tokens: 1000
 
-  # Cron schedule: run every 6 hours
-  schedule: '0 */6 * * *'
-
   # Embedding model for semantic similarity checks
   embedding_provider:
     api_key_env: OPENAI_API_KEY

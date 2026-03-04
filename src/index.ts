@@ -35,8 +35,6 @@ export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './type
 // Core exports
 export { runTests } from './core/runner/index.js';
 export { compareResponse } from './core/comparator/index.js';
-export { startScheduler, executeRun } from './core/scheduler/index.js';
-
 // Storage exports
 export { Storage } from './storage/index.js';
 

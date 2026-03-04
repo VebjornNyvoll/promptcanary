@@ -16,7 +16,6 @@ import {
   OpenAIEmbeddingFetcher,
   type EmbeddingFetcher,
 } from '../core/comparator/index.js';
-import { startScheduler } from '../core/scheduler/index.js';
 import { Storage, type StorageStats } from '../storage/index.js';
 
 // Import providers for side-effect registration
@@ -56,7 +55,7 @@ const program = new Command();
 
 program
   .name('promptcanary')
-  .description('Uptime monitoring for AI behavior')
+  .description('Test your LLM prompts like you test your code')
   .version(VERSION)
   .option('--dotenv <path>', 'Path to .env file (defaults to .env in current directory)');
 
@@ -150,61 +149,6 @@ program
       process.exitCode = 1;
     } finally {
       storage?.close();
-    }
-  });
-
-program
-  .command('monitor <file>')
-  .description('Start continuous monitoring from a config schedule')
-  .action((file: string) => {
-    loadEnvironment(program.opts<{ dotenv?: string }>().dotenv);
-    if (process.exitCode === 1) return;
-    let stop: (() => void) | undefined;
-    try {
-      const config = loadConfig(file);
-      const schedule = config.config.schedule;
-      if (!schedule) {
-        throw new Error('Missing schedule in config.config.schedule');
-      }
-
-      const scheduler = startScheduler({
-        config,
-        onRunStart: () => {
-          printInfo('Monitoring run started');
-        },
-        onRunComplete: (passed, failed) => {
-          printInfo(
-            `Monitoring run complete. Passed: ${String(passed)}, Failed: ${String(failed)}`,
-          );
-        },
-        onError: (error) => {
-          printFailure(`Monitoring run error: ${error.message}`);
-        },
-      });
-      stop = scheduler.stop;
-
-      printSuccess(`Monitoring started with schedule: ${schedule}`);
-
-      let stopping = false;
-      const handleShutdown = (signal: NodeJS.Signals): void => {
-        if (stopping) {
-          return;
-        }
-        stopping = true;
-        printWarning(`Received ${signal}. Shutting down monitor...`);
-        stop?.();
-      };
-
-      process.on('SIGINT', () => {
-        handleShutdown('SIGINT');
-      });
-      process.on('SIGTERM', () => {
-        handleShutdown('SIGTERM');
-      });
-    } catch (error) {
-      stop?.();
-      printFailure(formatError(error));
-      process.exitCode = 1;
     }
   });
 

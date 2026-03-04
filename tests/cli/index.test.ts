@@ -61,7 +61,6 @@ describe('CLI integration', () => {
       expect(stdout).toContain('init');
       expect(stdout).toContain('validate');
       expect(stdout).toContain('run');
-      expect(stdout).toContain('monitor');
       expect(stdout).toContain('results');
     });
   });

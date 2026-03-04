@@ -23,9 +23,6 @@ importers:
       dotenv:
         specifier: ^17.3.1
         version: 17.3.1
-      node-cron:
-        specifier: ^4.2.1
-        version: 4.2.1
       openai:
         specifier: ^6.25.0
         version: 6.25.0(ws@8.19.0)(zod@4.3.6)
@@ -48,9 +45,6 @@ importers:
       '@types/node':
         specifier: ^25.3.3
         version: 25.3.3
-      '@types/node-cron':
-        specifier: ^3.0.11
-        version: 3.0.11
       '@types/uuid':
         specifier: ^11.0.0
         version: 11.0.0
@@ -822,9 +816,6 @@ packages:
 
   '@types/mdurl@2.0.0':
     resolution: {integrity: sha512-RGdgjQUZba5p6QEFAVx2OGb8rQDL/cPRG7GiedRzMcJ1tYnUANBncjbSB1NRGwbvjcPeikRABz2nshyPk1bhWg==}
-
-  '@types/node-cron@3.0.11':
-    resolution: {integrity: sha512-0ikrnug3/IyneSHqCBeslAhlK2aBfYek1fGo4bP4QnZPmiqSGRK+Oy7ZMisLWkesffJvQ1cqAcBnJC+8+nxIAg==}
 
   '@types/node@25.3.3':
     resolution: {integrity: sha512-DpzbrH7wIcBaJibpKo9nnSQL0MTRdnWttGyE5haGwK86xgMOkFLp7vEyfQPGLOJh5wNYiJ3V9PmUMDhV9u8kkQ==}
@@ -1598,10 +1589,6 @@ packages:
   node-abi@3.87.0:
     resolution: {integrity: sha512-+CGM1L1CgmtheLcBuleyYOn7NWPVu0s0EJH2C4puxgEZb9h8QpR9G2dBfZJOAUhi7VQxuBPMd0hiISWcTyiYyQ==}
     engines: {node: '>=10'}
-
-  node-cron@4.2.1:
-    resolution: {integrity: sha512-lgimEHPE/QDgFlywTd8yTR61ptugX3Qer29efeyWw2rv259HtGBNn1vZVmp8lB9uo9wC0t/AT4iGqXxia+CJFg==}
-    engines: {node: '>=6.0.0'}
 
   node-domexception@1.0.0:
     resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
@@ -2752,8 +2739,6 @@ snapshots:
 
   '@types/mdurl@2.0.0': {}
 
-  '@types/node-cron@3.0.11': {}
-
   '@types/node@25.3.3':
     dependencies:
       undici-types: 7.18.2
@@ -3611,8 +3596,6 @@ snapshots:
   node-abi@3.87.0:
     dependencies:
       semver: 7.7.4
-
-  node-cron@4.2.1: {}
 
   node-domexception@1.0.0: {}
 

@@ -111,10 +111,6 @@ export const PromptCanaryConfigSchema = z.object({
       .array(ProviderConfigSchema)
       .min(1, 'At least one provider is required')
       .describe('LLM provider configurations'),
-    schedule: z
-      .string()
-      .optional()
-      .describe('Cron expression for scheduled runs (e.g., "0 */6 * * *")'),
     embedding_provider: z
       .object({
         api_key_env: z.string().min(1).default('OPENAI_API_KEY'),
