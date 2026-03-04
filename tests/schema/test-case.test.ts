@@ -180,14 +180,13 @@ describe('PromptCanaryConfigSchema', () => {
       ...minimalConfig,
       config: {
         ...minimalConfig.config,
-        schedule: '0 */6 * * *',
         embedding_provider: {
           api_key_env: 'OPENAI_API_KEY',
           model: 'text-embedding-3-small',
         },
       },
     });
-    expect(result.config.schedule).toBe('0 */6 * * *');
+    expect(result.config.embedding_provider?.model).toBe('text-embedding-3-small');
   });
 
   it('rejects empty providers array', () => {

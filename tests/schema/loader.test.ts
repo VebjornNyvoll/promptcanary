@@ -24,7 +24,7 @@ describe('loadConfig', () => {
   it('loads and validates full.yaml', () => {
     const config = loadConfig(resolve(EXAMPLES_DIR, 'full.yaml'));
     expect(config.config.providers).toHaveLength(2);
-    expect(config.config.schedule).toBe('0 */6 * * *');
+    expect(config.config.embedding_provider).toBeDefined();
     expect(config.tests).toHaveLength(3);
   });
 
