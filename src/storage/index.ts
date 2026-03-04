@@ -26,14 +26,6 @@ export interface StoredComparison {
   created_at: string;
 }
 
-export interface StorageStats {
-  runs: number;
-  comparisons: number;
-  alerts: number;
-  embeddings: number;
-  dbSizeBytes: number;
-}
-
 export interface Migration {
   version: number;
   up(db: Database.Database): void;
@@ -76,21 +68,11 @@ export const migrations: Migration[] = [
           created_at TEXT DEFAULT (datetime('now'))
         );
 
-        CREATE TABLE IF NOT EXISTS alerts (
-          id TEXT PRIMARY KEY,
-          run_id TEXT NOT NULL REFERENCES runs(id),
-          channel TEXT NOT NULL,
-          payload TEXT NOT NULL,
-          sent_at TEXT DEFAULT (datetime('now')),
-          success INTEGER NOT NULL
-        );
-
         CREATE INDEX IF NOT EXISTS idx_runs_test_name ON runs(test_name);
         CREATE INDEX IF NOT EXISTS idx_runs_provider ON runs(provider);
         CREATE INDEX IF NOT EXISTS idx_runs_created_at ON runs(created_at);
         CREATE INDEX IF NOT EXISTS idx_comparisons_run_id ON comparisons(run_id);
         CREATE INDEX IF NOT EXISTS idx_embeddings_hash ON embeddings_cache(content_hash);
-        CREATE INDEX IF NOT EXISTS idx_alerts_run_id ON alerts(run_id);
       `);
     },
   },
@@ -268,75 +250,6 @@ export class Storage {
     if (!row) return undefined;
 
     return Array.from(new Float64Array(row.embedding.buffer));
-  }
-
-  deleteRunsOlderThan(days: number): number {
-    const cleanup = this.db.transaction((retentionDays: number) => {
-      const deletedRunsRow = this.db
-        .prepare(
-          `SELECT COUNT(*) as count
-           FROM runs
-           WHERE created_at < datetime('now', '-' || ? || ' days')`,
-        )
-        .get(retentionDays) as { count: number };
-
-      this.db
-        .prepare(
-          `DELETE FROM alerts
-           WHERE run_id IN (
-             SELECT id FROM runs WHERE created_at < datetime('now', '-' || ? || ' days')
-           )`,
-        )
-        .run(retentionDays);
-
-      this.db
-        .prepare(
-          `DELETE FROM comparisons
-           WHERE run_id IN (
-             SELECT id FROM runs WHERE created_at < datetime('now', '-' || ? || ' days')
-           )`,
-        )
-        .run(retentionDays);
-
-      this.db
-        .prepare(`DELETE FROM runs WHERE created_at < datetime('now', '-' || ? || ' days')`)
-        .run(retentionDays);
-
-      return deletedRunsRow.count;
-    });
-
-    return cleanup(days);
-  }
-
-  deleteOrphanedEmbeddings(): number {
-    const result = this.db
-      .prepare(`DELETE FROM embeddings_cache WHERE created_at < datetime('now', '-90 days')`)
-      .run();
-    return result.changes;
-  }
-
-  getStats(): StorageStats {
-    const runs = this.db.prepare('SELECT COUNT(*) as count FROM runs').get() as { count: number };
-    const comparisons = this.db.prepare('SELECT COUNT(*) as count FROM comparisons').get() as {
-      count: number;
-    };
-    const alerts = this.db.prepare('SELECT COUNT(*) as count FROM alerts').get() as {
-      count: number;
-    };
-    const embeddings = this.db.prepare('SELECT COUNT(*) as count FROM embeddings_cache').get() as {
-      count: number;
-    };
-    const dbSize = this.db
-      .prepare('SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()')
-      .get() as { size: number };
-
-    return {
-      runs: runs.count,
-      comparisons: comparisons.count,
-      alerts: alerts.count,
-      embeddings: embeddings.count,
-      dbSizeBytes: dbSize.size,
-    };
   }
 
   /**
