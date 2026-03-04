@@ -120,7 +120,3 @@ Full documentation is available at **[vebjornnyvoll.github.io/promptcanary](http
 ## Contributing
 
 Contributions are welcome! Please open an issue first to discuss what you'd like to change.
-
-## License
-
-MIT
