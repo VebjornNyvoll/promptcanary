@@ -28,6 +28,9 @@ export type {
   ComparisonResult,
   AlertPayload,
   AlertChannel,
+  TestPromptOptions,
+  TestPromptResult,
+  ChatMessage,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
@@ -40,3 +43,5 @@ export { dispatchAlerts, createAlertChannels } from './core/alerting/index.js';
 
 // Storage exports
 export { Storage } from './storage/index.js';
+
+export { testPrompt } from './testing/testPrompt.js';
