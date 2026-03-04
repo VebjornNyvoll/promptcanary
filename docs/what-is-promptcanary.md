@@ -1,47 +1,60 @@
 # What is PromptCanary?
 
-PromptCanary is continuous monitoring for prompt behavior in production systems.
+PromptCanary is a testing library for LLM prompts. Add prompt regression tests to your existing test suite — Vitest, Jest, or any JavaScript test runner.
 
-Most teams test prompts before shipping. Fewer teams continuously verify those prompts after shipping. That gap is where incidents happen. Providers update models, safety layers shift, tokenization behavior changes, and responses drift quietly until users notice quality drops.
+LLM providers silently update models, deprecate versions, and shift behavior. PromptCanary lets you catch those regressions the same way you catch code bugs: with tests that run in CI.
 
-## The problem PromptCanary solves
+## The problem
 
-Prompt behavior can change without any code changes in your application.
+Prompt behavior can change without any code changes in your application:
 
-- OpenAI had a global disruption on June 10, 2025.
-- Anthropic reported elevated errors on August 14, 2025.
-- Teams often discover regressions from user complaints, not from monitoring.
+- Providers update models silently, altering output quality or format
+- Safety layers shift, changing what responses are allowed
+- Tokenization and context handling evolve between versions
 
-If your product depends on prompts, model drift is an uptime risk.
+Most teams discover these regressions from user complaints, not from tests.
 
-## Testing tools vs monitoring tools
+## How PromptCanary helps
 
-Prompt testing tools are valuable, but they are usually developer-initiated. You run them when you remember, often before release.
+PromptCanary gives you three functions to test prompt behavior:
 
-PromptCanary is designed as a monitoring tool:
+- **`testPrompt()`** — Send a prompt to any provider (OpenAI, Anthropic, Google Gemini) and get back a typed result with content, latency, and token usage
+- **`semanticSimilarity()`** — Compare response meaning using embeddings, catching subtle drift that string matching misses
+- **`assertions`** — Validate content, length, format, regex, JSON schema, and more with structured pass/fail results
 
-- It runs checks on a schedule, not only on demand.
-- It stores historical results so you can detect trends and drift.
-- It sends alerts when behavior crosses your thresholds.
+These are regular functions. They work in Vitest, Jest, Mocha, or any runner. No YAML config, no separate tool, no special infrastructure.
 
-PromptCanary complements testing frameworks like Promptfoo and DeepEval by providing autonomous, ongoing verification.
+```typescript
+import { testPrompt, assertions } from 'promptcanary';
 
-## How PromptCanary works
+it('explains the refund policy correctly', async () => {
+  const result = await testPrompt({
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+    messages: [{ role: 'user', content: 'What is the refund policy?' }],
+  });
 
-1. PromptCanary loads your YAML test cases and provider settings.
-2. The runner executes each test prompt across target providers.
-3. The comparator evaluates structural assertions and optional semantic similarity.
-4. Results are stored in SQLite for trend tracking and drift detection.
-5. Alert channels dispatch notifications for failures.
-6. Scheduler mode repeats this flow on your cron interval for continuous monitoring.
+  expect(assertions.contains(result.content, '30 days').passed).toBe(true);
+});
+```
 
 ## Who should use PromptCanary
 
-PromptCanary is for any team with prompts in production, including:
+PromptCanary is for any team with prompts in their codebase:
 
 - Product teams running user-facing LLM features
 - Platform teams maintaining shared prompt infrastructure
 - AI engineering teams managing multi-step prompt pipelines
 - Teams validating behavior across multiple providers
 
-If prompt behavior affects user experience or business outcomes, PromptCanary gives you an early warning system before issues become incidents.
+If prompt behavior affects user experience, PromptCanary gives you regression tests that run wherever your tests run.
+
+## Additional capabilities
+
+For teams that need more than test-time checks, PromptCanary also includes:
+
+- **CLI with YAML config** — Config-driven testing for teams that prefer declarative test definitions
+- **Continuous monitoring** — Schedule tests on cron intervals with SQLite-backed history
+- **Alerting** — Slack and webhook notifications when behavior drifts
+
+These are available under the [Advanced](/monitoring) section of the docs.
