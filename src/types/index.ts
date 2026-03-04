@@ -45,6 +45,11 @@ export interface TestPromptResult {
   };
 }
 
+export interface SemanticSimilarityOptions {
+  model?: string;
+  apiKey?: string;
+}
+
 export interface LLMResponse {
   content: string;
   model: string;

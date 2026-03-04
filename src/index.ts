@@ -31,6 +31,7 @@ export type {
   TestPromptOptions,
   TestPromptResult,
   ChatMessage,
+  SemanticSimilarityOptions,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
@@ -45,3 +46,4 @@ export { dispatchAlerts, createAlertChannels } from './core/alerting/index.js';
 export { Storage } from './storage/index.js';
 
 export { testPrompt } from './testing/testPrompt.js';
+export { semanticSimilarity } from './testing/semanticSimilarity.js';
