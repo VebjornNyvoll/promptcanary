@@ -19,6 +19,32 @@ export type PromptCanaryConfig = z.infer<typeof PromptCanaryConfigSchema>;
 // Runtime types (not schema-derived)
 export type ErrorType = 'rate_limit' | 'timeout' | 'auth' | 'provider' | 'unknown';
 
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+export interface TestPromptOptions {
+  provider: 'openai' | 'anthropic' | 'google';
+  model: string;
+  messages: ChatMessage[];
+  apiKey?: string;
+  temperature?: number;
+  maxTokens?: number;
+  timeoutMs?: number;
+}
+
+export interface TestPromptResult {
+  content: string;
+  model: string;
+  provider: string;
+  latencyMs: number;
+  tokenUsage: {
+    prompt: number;
+    completion: number;
+  };
+}
+
 export interface LLMResponse {
   content: string;
   model: string;
