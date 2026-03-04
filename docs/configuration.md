@@ -1,6 +1,6 @@
 # Configuration
 
-PromptCanary uses YAML configuration (typically `promptcanary.yaml`) with provider settings, optional scheduling, optional alerting, and one or more test cases.
+PromptCanary uses YAML configuration (typically `promptcanary.yaml`) with provider settings, optional embedding configuration, and one or more test cases.
 
 ## Complete example
 
@@ -29,16 +29,6 @@ config:
       temperature: 0.2
       max_tokens: 300
       timeout_ms: 30000
-
-  schedule: '0 */6 * * *'
-
-  alerts:
-    - type: slack
-      webhook_url_env: SLACK_WEBHOOK_URL
-    - type: webhook
-      url: https://example.com/promptcanary
-      headers:
-        Authorization: Bearer your-token
 
   embedding_provider:
     api_key_env: OPENAI_API_KEY
@@ -80,18 +70,6 @@ One or more provider entries:
 - `temperature` (optional): Number between `0` and `2`.
 - `max_tokens` (optional): Positive integer maximum response tokens.
 - `timeout_ms` (optional): Positive integer timeout in milliseconds. Defaults to `30000`.
-
-### `config.schedule`
-
-- Optional cron expression used by `promptcanary monitor`.
-- Example: `0 */6 * * *` runs every 6 hours.
-
-### `config.alerts`
-
-Optional alert channel list:
-
-- Slack channel: `type: slack`, `webhook_url_env`.
-- Webhook channel: `type: webhook`, `url`, optional `headers` map.
 
 ### `config.embedding_provider`
 

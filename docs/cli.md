@@ -59,19 +59,6 @@ Exit codes:
 - `0` all tests passed
 - `1` one or more tests failed or execution error
 
-## `promptcanary monitor <file>`
-
-Starts scheduler-based monitoring using `config.schedule`.
-
-```bash
-promptcanary monitor promptcanary.yaml
-```
-
-Notes:
-
-- Fails if schedule is missing or invalid.
-- Handles `SIGINT` and `SIGTERM` for graceful shutdown.
-
 ## `promptcanary results [--last N]`
 
 Shows recent stored runs from `promptcanary.db`.
@@ -84,18 +71,3 @@ promptcanary results --last 25
 Options:
 
 - `--last <number>`: number of recent runs to display (default `10`)
-
-## `promptcanary cleanup [--older-than N] [--dry-run]`
-
-Deletes old runs and stale embeddings cache rows.
-
-```bash
-promptcanary cleanup
-promptcanary cleanup --older-than 90
-promptcanary cleanup --dry-run
-```
-
-Options:
-
-- `--older-than <days>`: retention window in days (default `30`)
-- `--dry-run`: show deletion counts without deleting anything

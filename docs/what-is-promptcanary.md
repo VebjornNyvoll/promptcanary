@@ -49,12 +49,13 @@ PromptCanary is for any team with prompts in their codebase:
 
 If prompt behavior affects user experience, PromptCanary gives you regression tests that run wherever your tests run.
 
-## Additional capabilities
+## CLI alternative
 
-For teams that need more than test-time checks, PromptCanary also includes:
+For teams that prefer declarative test definitions, PromptCanary also ships a CLI with YAML config:
 
-- **CLI with YAML config** — Config-driven testing for teams that prefer declarative test definitions
-- **Continuous monitoring** — Schedule tests on cron intervals with SQLite-backed history
-- **Alerting** — Slack and webhook notifications when behavior drifts
+```bash
+promptcanary init
+promptcanary run promptcanary.yaml --verbose
+```
 
-These are available under the [Advanced](/monitoring) section of the docs.
+See the [CLI Reference](/cli) for full command documentation.
