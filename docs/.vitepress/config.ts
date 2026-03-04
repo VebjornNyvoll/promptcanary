@@ -16,7 +16,7 @@ export default defineConfig({
       { text: 'Reference', link: '/configuration' },
       { text: 'API', link: '/api' },
       {
-        text: 'v0.2.0',
+        text: 'v1.0.0',
         items: [
           { text: 'Changelog', link: '/changelog' },
           { text: 'npm', link: 'https://www.npmjs.com/package/promptcanary' },

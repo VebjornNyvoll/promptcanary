@@ -1,6 +1,6 @@
 {
   "name": "promptcanary",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Test your LLM prompts like you test your code. Assertions, semantic similarity, and multi-provider testing for Vitest, Jest, and any test runner.",
   "author": {
     "name": "Vebjørn Nyvoll",

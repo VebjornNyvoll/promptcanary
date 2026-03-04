@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-03-04
+
+### Removed
+
+- **`monitor` command** — use CI/CD scheduled workflows (cron) with `promptcanary run` instead
+- **`cleanup` command** — no longer needed without continuous monitoring
+- **Scheduler** (`startScheduler`, `executeRun`) — removed from public API
+- **Alerting system** — Slack, webhook, `dispatchAlerts`, `createAlertChannels` all removed. Use your existing alerting infrastructure (PagerDuty, Datadog, CI notifications, etc.)
+- **Alert types** — `AlertConfig`, `AlertPayload`, `AlertChannel`, `AlertConfigSchema` removed
+- **`schedule` config field** — no longer part of the configuration schema
+- **`node-cron` dependency** — no longer needed
+
+### Migration from 0.2.0
+
+If you were using `promptcanary monitor`:
+
+- Replace with a CI/CD scheduled workflow (e.g., GitHub Actions `schedule`, GitLab CI schedule, or a system cron job) that runs `promptcanary run your-config.yaml`
+
+If you were using alerting (Slack/webhook):
+
+- Use your CI/CD pipeline's built-in notification system. PromptCanary exits with code `1` on failures, which triggers standard CI alerts automatically.
+
+If you were using the `cleanup` command:
+
+- No replacement needed. Without continuous monitoring, database growth is minimal.
+
+If you imported `startScheduler`, `executeRun`, or alert types:
+
+- Remove these imports. Use `testPrompt()`, `assertions`, and `semanticSimilarity()` for programmatic testing instead.
+
 ## [0.2.0] - 2026-03-04
 
 ### Added
