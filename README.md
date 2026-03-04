@@ -1,6 +1,20 @@
-# PromptCanary
+<p align="center">
+  <a href="https://vebjornnyvoll.github.io/promptcanary/">
+    <img src="docs/public/logo-banner.png" width="500" alt="PromptCanary" />
+  </a>
+</p>
 
-> Uptime monitoring for AI behavior. Catch model drift before your users do.
+<p align="center">
+  <em>Uptime monitoring for AI behavior. Catch model drift before your users do.</em>
+</p>
+
+<p align="center">
+  <a href="https://github.com/VebjornNyvoll/promptcanary/actions"><img src="https://img.shields.io/github/actions/workflow/status/VebjornNyvoll/promptcanary/ci.yml?branch=master&label=build" alt="Build" /></a>
+  <a href="https://www.npmjs.com/package/promptcanary"><img src="https://img.shields.io/npm/v/promptcanary" alt="npm" /></a>
+  <a href="https://github.com/VebjornNyvoll/promptcanary/blob/master/LICENSE"><img src="https://img.shields.io/github/license/VebjornNyvoll/promptcanary" alt="License" /></a>
+</p>
+
+---
 
 PromptCanary runs prompt tests continuously, compares responses against expectations, and alerts you when behavior changes.
 
