@@ -20,16 +20,6 @@ config:
   # Cron schedule: run every 6 hours
   schedule: '0 */6 * * *'
 
-  # Alert channels — notified when tests fail
-  alerts:
-    - type: slack
-      webhook_url_env: SLACK_WEBHOOK_URL
-
-    - type: webhook
-      url: 'https://example.com/promptcanary-webhook'
-      headers:
-        Authorization: 'Bearer my-token'
-
   # Embedding model for semantic similarity checks
   embedding_provider:
     api_key_env: OPENAI_API_KEY

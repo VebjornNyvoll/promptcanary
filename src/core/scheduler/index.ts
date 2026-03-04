@@ -4,7 +4,6 @@ import { runTests } from '../runner/index.js';
 import { compareResponse } from '../comparator/index.js';
 import { EmbeddingCache, OpenAIEmbeddingFetcher } from '../comparator/embedding.js';
 import type { EmbeddingFetcher } from '../comparator/embedding.js';
-import { dispatchAlerts, createAlertChannels } from '../alerting/index.js';
 import { Storage } from '../../storage/index.js';
 
 export interface SchedulerOptions {
@@ -137,17 +136,6 @@ export async function executeRun(
 
       // Save to storage
       storage.saveRun(result.test_name, testCase.prompt, result);
-    }
-
-    // Dispatch alerts
-    const alertConfigs = config.config.alerts ?? [];
-    if (alertConfigs.length > 0) {
-      try {
-        const channels = createAlertChannels(alertConfigs);
-        await dispatchAlerts({ results, channels, storage });
-      } catch {
-        // Alert dispatch failure shouldn't crash the scheduler
-      }
     }
 
     const passed = results.filter((r) => r.comparison.passed).length;

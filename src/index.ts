@@ -7,7 +7,6 @@ export {
   ResponseFormatSchema,
   ExpectationSchema,
   TestCaseSchema,
-  AlertConfigSchema,
   PromptCanaryConfigSchema,
 } from './schema/test-case.js';
 
@@ -20,14 +19,11 @@ export type {
   SemanticSimilarity,
   Expectation,
   TestCase,
-  AlertConfig,
   PromptCanaryConfig,
   LLMResponse,
   RunResult,
   AssertionResult,
   ComparisonResult,
-  AlertPayload,
-  AlertChannel,
   TestPromptOptions,
   TestPromptResult,
   ChatMessage,
@@ -40,7 +36,6 @@ export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './type
 export { runTests } from './core/runner/index.js';
 export { compareResponse } from './core/comparator/index.js';
 export { startScheduler, executeRun } from './core/scheduler/index.js';
-export { dispatchAlerts, createAlertChannels } from './core/alerting/index.js';
 
 // Storage exports
 export { Storage } from './storage/index.js';

@@ -4,7 +4,6 @@ import type {
   SemanticSimilaritySchema,
   ExpectationSchema,
   TestCaseSchema,
-  AlertConfigSchema,
   PromptCanaryConfigSchema,
 } from '../schema/test-case.js';
 
@@ -13,7 +12,6 @@ export type ProviderConfig = z.infer<typeof ProviderConfigSchema>;
 export type SemanticSimilarity = z.infer<typeof SemanticSimilaritySchema>;
 export type Expectation = z.infer<typeof ExpectationSchema>;
 export type TestCase = z.infer<typeof TestCaseSchema>;
-export type AlertConfig = z.infer<typeof AlertConfigSchema>;
 export type PromptCanaryConfig = z.infer<typeof PromptCanaryConfigSchema>;
 
 // Runtime types (not schema-derived)
@@ -87,22 +85,6 @@ export interface ComparisonResult {
   assertions: AssertionResult[];
   semantic_score?: number;
   details: string;
-}
-
-export interface AlertPayload {
-  test_name: string;
-  provider: string;
-  model: string;
-  failure_type: 'assertion' | 'semantic_drift' | 'error';
-  details: string;
-  severity: 'warning' | 'critical';
-  timestamp: Date;
-  run_id: string;
-}
-
-export interface AlertChannel {
-  type: string;
-  send(alert: AlertPayload): Promise<void>;
 }
 
 export class ProviderError extends Error {
