@@ -6,3 +6,5 @@ dist/
 !.env.example
 coverage/
 *.tsbuildinfo
+docs/.vitepress/cache
+docs/.vitepress/dist
