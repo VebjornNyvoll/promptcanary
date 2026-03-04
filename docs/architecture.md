@@ -13,7 +13,6 @@ This page summarizes PromptCanary system architecture and major design choices.
 | Build           | tsup                      | Simple TypeScript bundling             |
 | Validation      | Zod                       | Runtime validation plus inferred types |
 | YAML parser     | yaml                      | YAML 1.2 support                       |
-| Scheduler       | node-cron                 | Lightweight cron scheduling            |
 | Storage         | SQLite via better-sqlite3 | Zero-config local persistence          |
 | CLI             | commander                 | Mature CLI framework                   |
 
@@ -32,21 +31,19 @@ promptcanary/
 │   │   │       ├── openai.ts
 │   │   │       ├── anthropic.ts
 │   │   │       └── google.ts
-│   │   ├── comparator/
-│   │   │   ├── index.ts
-│   │   │   ├── embedding.ts
-│   │   │   └── assertions.ts
-│   │   ├── scheduler/
-│   │   │   └── index.ts
-│   │   └── alerting/
+│   │   └── comparator/
 │   │       ├── index.ts
-│   │       ├── slack.ts
-│   │       └── webhook.ts
+│   │       ├── embedding.ts
+│   │       └── assertions.ts
 │   ├── schema/
 │   │   ├── test-case.ts
 │   │   └── loader.ts
 │   ├── storage/
 │   │   └── index.ts
+│   ├── testing/
+│   │   ├── testPrompt.ts
+│   │   ├── semanticSimilarity.ts
+│   │   └── assertions.ts
 │   ├── types/
 │   │   └── index.ts
 │   └── index.ts
@@ -56,6 +53,14 @@ promptcanary/
 ```
 
 ## Core architecture
+
+### Testing API
+
+The primary interface for most users:
+
+- **`testPrompt()`** — Send a prompt to any provider and get a typed result with content, latency, and token usage.
+- **`semanticSimilarity()`** — Compare response meaning using embeddings.
+- **`assertions`** — Validate content, length, format, regex, JSON schema with structured pass/fail results.
 
 ### Runner
 
@@ -73,34 +78,20 @@ promptcanary/
 
 ### Storage
 
-- Persists runs, comparisons, embeddings cache, and alerts in SQLite.
+- Persists runs, comparisons, and embeddings cache in SQLite.
 - Uses schema migrations and transactions for consistency.
-- Supports result querying, dedup checks, and cleanup operations.
-
-### Scheduler
-
-- Validates cron schedule and starts long-running task.
-- Prevents overlapping runs.
-- Executes runner, comparator, storage write, and alert dispatch.
-- Exposes `stop()` for graceful shutdown.
-
-### Alert system
-
-- Creates configured channels (Slack and webhook).
-- Builds alert payload from failed results.
-- Applies cooldown-based deduplication.
-- Retries channel sends with backoff at channel level.
+- Supports result querying for historical comparison.
 
 ## Data flow
 
 ```text
-User defines YAML          Scheduler triggers
-      |                          |
-      v                          v
-  +----------+             +-----------+
-  | Parser   |<------------| Scheduler |
-  | (Zod)    |             | (cron)    |
-  +----+-----+             +-----------+
+User defines tests (code or YAML)
+      |
+      v
+  +----------+
+  | Parser   |
+  | (Zod)    |
+  +----+-----+
        |
        v
   +----------+
@@ -112,12 +103,11 @@ User defines YAML          Scheduler triggers
   |Comparator|---- structural + semantic + drift
   +----+-----+
        | ComparisonResult[]
-       +--------------+
-       v              v
-  +----------+   +----------+
-  | Storage  |   | Alerter  |---- Slack/Webhook
-  | SQLite   |   |          |
-  +----------+   +----------+
+       v
+  +----------+
+  | Storage  |
+  | SQLite   |
+  +----------+
 ```
 
 ## Key design decisions
@@ -127,4 +117,4 @@ User defines YAML          Scheduler triggers
 3. SQLite for self-contained, zero-infrastructure operation.
 4. Embedding-based checks for robust semantic drift detection.
 5. Provider-agnostic runner interface for extensibility.
-6. CLI-first architecture for local runs, CI, and daemon-like monitoring.
+6. Library-first design — works as functions in any test runner, with an optional CLI for config-driven usage.

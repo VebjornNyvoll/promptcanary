@@ -52,8 +52,6 @@ export default defineConfig({
       {
         text: 'Advanced',
         items: [
-          { text: 'Continuous Monitoring', link: '/monitoring' },
-          { text: 'Alerting', link: '/alerting' },
           { text: 'Architecture', link: '/architecture' },
           { text: 'Troubleshooting', link: '/troubleshooting' },
           { text: 'Changelog', link: '/changelog' },
