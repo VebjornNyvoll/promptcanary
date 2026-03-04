@@ -4,7 +4,9 @@ export default defineConfig({
   title: 'PromptCanary',
   description: 'Uptime monitoring for AI behavior. Catch model drift before your users do.',
 
-  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/logo.svg' }]],
+  base: '/promptcanary/',
+
+  head: [['link', { rel: 'icon', type: 'image/svg+xml', href: '/promptcanary/logo.svg' }]],
 
   themeConfig: {
     logo: '/logo.svg',
