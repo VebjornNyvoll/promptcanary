@@ -47,3 +47,5 @@ export { Storage } from './storage/index.js';
 
 export { testPrompt } from './testing/testPrompt.js';
 export { semanticSimilarity } from './testing/semanticSimilarity.js';
+export { assertions } from './testing/assertions.js';
+export type { AssertionDescriptor, RunAllResult } from './testing/assertions.js';
