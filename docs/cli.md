@@ -20,6 +20,17 @@ Creates starter `promptcanary.yaml` in the current directory.
 promptcanary init
 ```
 
+Options:
+
+- `--test-runner <type>`: also scaffold `promptcanary.test.ts` using `vitest` or `jest`
+
+Examples:
+
+```bash
+promptcanary init --test-runner vitest
+promptcanary init --test-runner jest
+```
+
 ## `promptcanary validate <file>`
 
 Loads and validates config file.

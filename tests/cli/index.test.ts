@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -78,6 +78,37 @@ describe('CLI integration', () => {
       const { stdout, exitCode } = await run(['init'], { cwd: tempDir });
       expect(exitCode).toBe(1);
       expect(stdout).toContain('already exists');
+    });
+
+    it('creates yaml and test file with --test-runner vitest', async () => {
+      const { stdout, exitCode } = await run(['init', '--test-runner', 'vitest'], { cwd: tempDir });
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('Created promptcanary.yaml and promptcanary.test.ts');
+      expect(existsSync(join(tempDir, 'promptcanary.yaml'))).toBe(true);
+      expect(existsSync(join(tempDir, 'promptcanary.test.ts'))).toBe(true);
+    });
+
+    it('creates yaml and test file with --test-runner jest', async () => {
+      const { stdout, exitCode } = await run(['init', '--test-runner', 'jest'], { cwd: tempDir });
+      expect(exitCode).toBe(0);
+      expect(stdout).toContain('Created promptcanary.yaml and promptcanary.test.ts');
+      expect(existsSync(join(tempDir, 'promptcanary.yaml'))).toBe(true);
+      expect(existsSync(join(tempDir, 'promptcanary.test.ts'))).toBe(true);
+    });
+
+    it('writes vitest import in generated test file', async () => {
+      const { exitCode } = await run(['init', '--test-runner', 'vitest'], { cwd: tempDir });
+      expect(exitCode).toBe(0);
+      const generated = readFileSync(join(tempDir, 'promptcanary.test.ts'), 'utf8');
+      expect(generated).toContain("import { describe, it, expect } from 'vitest';");
+    });
+
+    it('prints an error for invalid test runner', async () => {
+      const { stderr, exitCode } = await run(['init', '--test-runner', 'invalid'], {
+        cwd: tempDir,
+      });
+      expect(exitCode).toBe(1);
+      expect(stderr).toContain('Invalid --test-runner value');
     });
   });
 

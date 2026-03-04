@@ -32,6 +32,8 @@ const ansi = {
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const templatePath = resolve(here, '../../examples/basic.yaml');
+const vitestTemplatePath = resolve(here, '../../examples/template.vitest.ts');
+const jestTemplatePath = resolve(here, '../../examples/template.jest.ts');
 
 function loadEnvironment(envFile?: string): void {
   if (envFile) {
@@ -61,8 +63,17 @@ program
 program
   .command('init')
   .description('Create a starter promptcanary.yaml in the current directory')
-  .action(async () => {
+  .option('--test-runner <type>', 'Generate a test file for your test runner (vitest or jest)')
+  .action(async (options: { testRunner?: string }) => {
+    const testRunner = options.testRunner;
+    if (testRunner !== undefined && testRunner !== 'vitest' && testRunner !== 'jest') {
+      printFailure('Invalid --test-runner value. Expected "vitest" or "jest".');
+      process.exitCode = 1;
+      return;
+    }
+
     const targetPath = resolve(process.cwd(), 'promptcanary.yaml');
+    const testTargetPath = resolve(process.cwd(), 'promptcanary.test.ts');
 
     try {
       await access(targetPath, constants.F_OK);
@@ -73,22 +84,39 @@ program
       // File does not exist; continue.
     }
 
-    await new Promise<void>((resolvePromise, rejectPromise) => {
-      copyFile(templatePath, targetPath, (error) => {
-        if (error) {
-          rejectPromise(error);
-          return;
-        }
-        resolvePromise();
-      });
-    });
+    if (testRunner) {
+      try {
+        await access(testTargetPath, constants.F_OK);
+        printWarning(`promptcanary.test.ts already exists at ${testTargetPath}`);
+        process.exitCode = 1;
+        return;
+      } catch {
+        // File does not exist; continue.
+      }
+    }
 
-    printSuccess(`Created promptcanary.yaml at ${targetPath}`);
+    await copyFileAsync(templatePath, targetPath);
+
+    if (testRunner) {
+      const sourcePath = testRunner === 'vitest' ? vitestTemplatePath : jestTemplatePath;
+      await copyFileAsync(sourcePath, testTargetPath);
+    }
+
+    printSuccess(
+      testRunner
+        ? `Created promptcanary.yaml and promptcanary.test.ts at ${process.cwd()}`
+        : `Created promptcanary.yaml at ${targetPath}`,
+    );
     printInfo('Next steps:');
     printInfo('1. Add your API keys to a .env file or export them in your shell');
     printInfo('2. Edit promptcanary.yaml with your prompts and expectations');
-    printInfo('3. Run: promptcanary validate promptcanary.yaml');
-    printInfo('4. Run: promptcanary run promptcanary.yaml');
+    if (testRunner) {
+      printInfo('3. Edit promptcanary.test.ts with your project-specific test cases');
+      printInfo(`4. Run your ${testRunner} test command to execute promptcanary.test.ts`);
+    } else {
+      printInfo('3. Run: promptcanary validate promptcanary.yaml');
+      printInfo('4. Run: promptcanary run promptcanary.yaml');
+    }
   });
 
 program
@@ -212,6 +240,18 @@ function parsePositiveInt(value: string): number {
     throw new InvalidArgumentError('Expected a positive integer.');
   }
   return parsed;
+}
+
+function copyFileAsync(sourcePath: string, destinationPath: string): Promise<void> {
+  return new Promise<void>((resolvePromise, rejectPromise) => {
+    copyFile(sourcePath, destinationPath, (error) => {
+      if (error) {
+        rejectPromise(error);
+        return;
+      }
+      resolvePromise();
+    });
+  });
 }
 
 async function applyComparisons(
