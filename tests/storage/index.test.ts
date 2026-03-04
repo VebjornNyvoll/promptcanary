@@ -159,31 +159,9 @@ describe('Storage', () => {
     });
   });
 
-  describe('alerts', () => {
-    it('saves and retrieves alerts', () => {
-      storage.saveRun('Test', 'prompt', makeRunResult());
-      storage.saveAlert('run-test-001', 'slack', { test: 'data' }, true);
-
-      const alerts = storage.getAlerts();
-      expect(alerts).toHaveLength(1);
-      expect(alerts[0].channel).toBe('slack');
-      expect(alerts[0].success).toBe(1);
-    });
-
-    it('detects recently sent alerts', () => {
-      storage.saveRun('Test', 'prompt', makeRunResult());
-      storage.saveAlert('run-test-001', 'slack', { test: 'data' }, true);
-
-      expect(storage.wasAlertSentRecently('Test', 'openai', 'slack')).toBe(true);
-      expect(storage.wasAlertSentRecently('Test', 'openai', 'webhook')).toBe(false);
-      expect(storage.wasAlertSentRecently('Other', 'openai', 'slack')).toBe(false);
-    });
-  });
-
   describe('cleanup', () => {
     it('deleteRunsOlderThan removes old runs and cascades', () => {
       storage.saveRun('old-test', 'prompt', makeRunResult({ run_id: 'old-run-id' }));
-      storage.saveAlert('old-run-id', 'slack', { scope: 'old' }, true);
 
       const db = (storage as unknown as { db: Database.Database }).db;
       db.prepare(
@@ -195,7 +173,6 @@ describe('Storage', () => {
       expect(deleted).toBe(1);
       expect(storage.getRuns({ testName: 'old-test' })).toHaveLength(0);
       expect(storage.getComparison('old-run-id')).toBeUndefined();
-      expect(storage.getAlerts()).toHaveLength(0);
     });
 
     it('deleteRunsOlderThan preserves recent runs', () => {
@@ -244,7 +221,6 @@ describe('Storage', () => {
     it('getStats returns correct counts', () => {
       storage.saveRun('stats-a', 'prompt', makeRunResult({ run_id: 'stats-run-a' }));
       storage.saveRun('stats-b', 'prompt', makeRunResult({ run_id: 'stats-run-b' }));
-      storage.saveAlert('stats-run-a', 'slack', { key: 'value' }, true);
       storage.cacheEmbedding('stats-hash-a', [0.11, 0.22], 'text-embedding-3-small');
       storage.cacheEmbedding('stats-hash-b', [0.33, 0.44], 'text-embedding-3-small');
 
@@ -252,7 +228,7 @@ describe('Storage', () => {
 
       expect(stats.runs).toBe(2);
       expect(stats.comparisons).toBe(2);
-      expect(stats.alerts).toBe(1);
+      expect(stats.alerts).toBe(0);
       expect(stats.embeddings).toBe(2);
       expect(stats.dbSizeBytes).toBeGreaterThan(0);
     });

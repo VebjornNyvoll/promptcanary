@@ -102,30 +102,6 @@ export const TestCaseSchema = z.object({
 });
 
 /**
- * Schema for alert channel configuration.
- */
-export const AlertConfigSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('slack'),
-    webhook_url_env: z
-      .string()
-      .min(1, 'Slack webhook URL env var is required')
-      .describe('Environment variable containing Slack webhook URL'),
-  }),
-  z.object({
-    type: z.literal('webhook'),
-    url: z
-      .string()
-      .min(1, 'Webhook URL is required')
-      .refine((val) => val.startsWith('http://') || val.startsWith('https://'), {
-        message: 'Webhook URL must start with http:// or https://',
-      })
-      .describe('Webhook endpoint URL'),
-    headers: z.record(z.string(), z.string()).optional().describe('Optional HTTP headers'),
-  }),
-]);
-
-/**
  * Schema for the top-level PromptCanary configuration file.
  */
 export const PromptCanaryConfigSchema = z.object({
@@ -139,7 +115,6 @@ export const PromptCanaryConfigSchema = z.object({
       .string()
       .optional()
       .describe('Cron expression for scheduled runs (e.g., "0 */6 * * *")'),
-    alerts: z.array(AlertConfigSchema).optional().describe('Alert channel configurations'),
     embedding_provider: z
       .object({
         api_key_env: z.string().min(1).default('OPENAI_API_KEY'),

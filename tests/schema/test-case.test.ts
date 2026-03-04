@@ -4,7 +4,6 @@ import {
   SemanticSimilaritySchema,
   ExpectationSchema,
   TestCaseSchema,
-  AlertConfigSchema,
   PromptCanaryConfigSchema,
   ResponseFormatSchema,
 } from '../../src/schema/test-case.js';
@@ -160,43 +159,6 @@ describe('TestCaseSchema', () => {
   });
 });
 
-describe('AlertConfigSchema', () => {
-  it('validates a Slack alert', () => {
-    const result = AlertConfigSchema.parse({
-      type: 'slack',
-      webhook_url_env: 'SLACK_WEBHOOK_URL',
-    });
-    expect(result.type).toBe('slack');
-  });
-
-  it('validates a webhook alert', () => {
-    const result = AlertConfigSchema.parse({
-      type: 'webhook',
-      url: 'https://example.com/hook',
-      headers: { Authorization: 'Bearer token' },
-    });
-    expect(result.type).toBe('webhook');
-  });
-
-  it('rejects email type (not implemented)', () => {
-    expect(() =>
-      AlertConfigSchema.parse({
-        type: 'email',
-        smtp_host_env: 'SMTP_HOST',
-        smtp_port: 587,
-        smtp_user_env: 'SMTP_USER',
-        smtp_pass_env: 'SMTP_PASS',
-        from: 'alerts@example.com',
-        to: ['dev@example.com'],
-      }),
-    ).toThrow();
-  });
-
-  it('rejects webhook with invalid URL', () => {
-    expect(() => AlertConfigSchema.parse({ type: 'webhook', url: 'not-a-url' })).toThrow();
-  });
-});
-
 describe('PromptCanaryConfigSchema', () => {
   const minimalConfig = {
     version: '1' as const,
@@ -219,7 +181,6 @@ describe('PromptCanaryConfigSchema', () => {
       config: {
         ...minimalConfig.config,
         schedule: '0 */6 * * *',
-        alerts: [{ type: 'slack', webhook_url_env: 'SLACK_URL' }],
         embedding_provider: {
           api_key_env: 'OPENAI_API_KEY',
           model: 'text-embedding-3-small',
@@ -227,7 +188,6 @@ describe('PromptCanaryConfigSchema', () => {
       },
     });
     expect(result.config.schedule).toBe('0 */6 * * *');
-    expect(result.config.alerts).toHaveLength(1);
   });
 
   it('rejects empty providers array', () => {
@@ -254,17 +214,5 @@ describe('PromptCanaryConfigSchema', () => {
 
   it('rejects invalid version', () => {
     expect(() => PromptCanaryConfigSchema.parse({ ...minimalConfig, version: '2' })).toThrow();
-  });
-});
-
-describe('AlertConfigSchema', () => {
-  it('accepts slack config', () => {
-    const result = AlertConfigSchema.parse({ type: 'slack', webhook_url_env: 'SLACK_URL' });
-    expect(result.type).toBe('slack');
-  });
-
-  it('accepts webhook config', () => {
-    const result = AlertConfigSchema.parse({ type: 'webhook', url: 'https://example.com/hook' });
-    expect(result.type).toBe('webhook');
   });
 });

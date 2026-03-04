@@ -25,7 +25,6 @@ describe('loadConfig', () => {
     const config = loadConfig(resolve(EXAMPLES_DIR, 'full.yaml'));
     expect(config.config.providers).toHaveLength(2);
     expect(config.config.schedule).toBe('0 */6 * * *');
-    expect(config.config.alerts).toHaveLength(2);
     expect(config.tests).toHaveLength(3);
   });
 

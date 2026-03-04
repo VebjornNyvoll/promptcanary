@@ -26,15 +26,6 @@ export interface StoredComparison {
   created_at: string;
 }
 
-export interface StoredAlert {
-  id: string;
-  run_id: string;
-  channel: string;
-  payload: string;
-  sent_at: string;
-  success: boolean;
-}
-
 export interface StorageStats {
   runs: number;
   comparisons: number;
@@ -277,54 +268,6 @@ export class Storage {
     if (!row) return undefined;
 
     return Array.from(new Float64Array(row.embedding.buffer));
-  }
-
-  /**
-   * Save an alert record.
-   */
-  saveAlert(
-    runId: string,
-    channel: string,
-    payload: Record<string, unknown>,
-    success: boolean,
-  ): void {
-    this.db
-      .prepare(
-        `INSERT INTO alerts (id, run_id, channel, payload, success)
-         VALUES (?, ?, ?, ?, ?)`,
-      )
-      .run(randomUUID(), runId, channel, JSON.stringify(payload), success ? 1 : 0);
-  }
-
-  /**
-   * Check if an alert was sent recently for the same test+provider+channel.
-   * Used for deduplication.
-   */
-  wasAlertSentRecently(
-    testName: string,
-    provider: string,
-    channel: string,
-    cooldownMinutes = 60,
-  ): boolean {
-    const row = this.db
-      .prepare(
-        `SELECT COUNT(*) as count FROM alerts a
-         JOIN runs r ON a.run_id = r.id
-         WHERE r.test_name = ? AND r.provider = ? AND a.channel = ?
-         AND a.sent_at > datetime('now', ?)`,
-      )
-      .get(testName, provider, channel, `-${String(cooldownMinutes)} minutes`) as { count: number };
-
-    return row.count > 0;
-  }
-
-  /**
-   * Get recent alerts.
-   */
-  getAlerts(limit = 20): StoredAlert[] {
-    return this.db
-      .prepare('SELECT * FROM alerts ORDER BY sent_at DESC LIMIT ?')
-      .all(limit) as StoredAlert[];
   }
 
   deleteRunsOlderThan(days: number): number {
