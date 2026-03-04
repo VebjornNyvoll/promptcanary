@@ -1,0 +1,49 @@
+name: 'PromptCanary'
+description: 'Run LLM prompt regression tests in your CI pipeline'
+author: 'VebjornNyvoll'
+
+branding:
+  icon: 'check-circle'
+  color: 'yellow'
+
+inputs:
+  config:
+    description: 'Path to promptcanary YAML config file'
+    required: true
+    default: 'promptcanary.yaml'
+  version:
+    description: 'PromptCanary version to use'
+    required: false
+    default: 'latest'
+  verbose:
+    description: 'Enable verbose output'
+    required: false
+    default: 'false'
+  json:
+    description: 'Output results as JSON'
+    required: false
+    default: 'false'
+  node-version:
+    description: 'Node.js version to use'
+    required: false
+    default: '20'
+  args:
+    description: 'Additional CLI arguments'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Run PromptCanary
+      shell: bash
+      run: |
+        FLAGS=""
+        if [ "${{ inputs.verbose }}" = "true" ]; then FLAGS="$FLAGS --verbose"; fi
+        if [ "${{ inputs.json }}" = "true" ]; then FLAGS="$FLAGS --json"; fi
+        npx promptcanary@${{ inputs.version }} run ${{ inputs.config }} $FLAGS ${{ inputs.args }}
