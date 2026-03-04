@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-03-04
+
+### Added
+
+- `testPrompt()` — standalone function to send prompts to any provider and get typed results
+- `semanticSimilarity()` — compute cosine similarity between two strings using OpenAI embeddings
+- `assertions` namespace — 7 synchronous assertion helpers (`contains`, `notContains`, `maxLength`, `minLength`, `matchesRegex`, `isJson`, `matchesJsonSchema`) plus `runAll()` for batch execution
+- New types: `TestPromptOptions`, `TestPromptResult`, `ChatMessage`, `SemanticSimilarityOptions`, `AssertionDescriptor`, `RunAllResult`
+- 45 new unit tests for the testing API
+
+### Changed
+
+- README repositioned from monitoring tool to testing library
+- Getting started guide leads with programmatic API (Vitest/Jest) instead of CLI
+- API reference rewritten to lead with `testPrompt()`, `semanticSimilarity()`, and `assertions`
+- "What is PromptCanary?" intro page updated for testing library identity
+- Docs sidebar reorganized: monitoring and alerting moved to Advanced section
+- Configuration renamed to "Configuration (YAML)" in sidebar
+- package.json description and keywords updated for npm discoverability
+
+### Fixed
+
+- CI workflow now runs Build before Test so CLI integration tests find `dist/` output
+
 ## [0.1.0] - 2026-03-03
 
 ### Added
