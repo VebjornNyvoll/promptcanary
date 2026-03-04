@@ -111,6 +111,19 @@ jobs:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
 ```
 
+### Using the PromptCanary action
+
+As an alternative to running `npx` directly, you can use the built-in PromptCanary composite action:
+
+```yaml
+- uses: VebjornNyvoll/promptcanary/.github/actions/run@master
+  with:
+    config: promptcanary.yaml
+    verbose: true
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
 ## GitLab CI
 
 ```yaml
