@@ -157,3 +157,9 @@ export interface AnswerRelevanceOptions {
   threshold?: number;
   judge?: JudgeOptions;
 }
+
+export interface FaithfulnessOptions {
+  context: string;
+  threshold?: number;
+  judge?: JudgeOptions;
+}

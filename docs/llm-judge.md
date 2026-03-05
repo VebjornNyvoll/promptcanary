@@ -182,9 +182,33 @@ Scores based on directness (does it answer the question?), completeness (does it
 | `threshold` | `number`       | `0.5`   | Score threshold for pass/fail    |
 | `judge`     | `JudgeOptions` | —       | Judge model configuration        |
 
+## faithfulness
+
+Detect hallucinations by checking whether LLM output stays faithful to provided context. Essential for RAG applications.
+
+The judge extracts factual claims from the output and verifies each against the context. Score = supported claims / total claims.
+
+```typescript
+import { assertions } from 'promptcanary';
+
+const result = await assertions.faithfulness(
+  'Returns are accepted within 30 days. Items must be unused.',
+  {
+    context: 'Our return policy allows returns within 30 days. Items must be unused.',
+    threshold: 0.7,
+    judge: { model: 'gpt-4o-mini' },
+  },
+);
+```
+
+### FaithfulnessOptions
+
+| Option      | Type           | Default | Description                                   |
+| ----------- | -------------- | ------- | --------------------------------------------- |
+| `context`   | `string`       | —       | Reference context to check against (required) |
+| `threshold` | `number`       | `0.5`   | Score threshold for pass/fail                 |
+| `judge`     | `JudgeOptions` | —       | Judge model configuration                     |
+
 ## Coming Soon
 
-Specialized scorers building on this infrastructure:
-
-- **`faithfulness`** — RAG hallucination detection
 - **`toxicity`** — Harmful content detection

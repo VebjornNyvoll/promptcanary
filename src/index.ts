@@ -33,6 +33,7 @@ export type {
   LlmRubricOptions,
   FactualityOptions,
   AnswerRelevanceOptions,
+  FaithfulnessOptions,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
@@ -53,4 +54,5 @@ export {
   buildRubricPrompt,
   buildFactualityPrompt,
   buildAnswerRelevancePrompt,
+  buildFaithfulnessPrompt,
 } from './testing/judge/templates.js';
