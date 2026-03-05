@@ -30,6 +30,8 @@ export interface TestPromptOptions {
   temperature?: number;
   maxTokens?: number;
   timeoutMs?: number;
+  cache?: boolean;
+  cacheTtl?: number;
 }
 
 export interface TestPromptResult {
@@ -41,6 +43,7 @@ export interface TestPromptResult {
     prompt: number;
     completion: number;
   };
+  cached?: boolean;
 }
 
 export interface SemanticSimilarityOptions {
