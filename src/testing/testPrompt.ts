@@ -10,11 +10,15 @@ import type {
 import type { AssertionDescriptor } from './assertions.js';
 import { assertions } from './assertions.js';
 import { getProvider } from '../core/runner/providers/base.js';
+import { ResponseCache } from './responseCache.js';
 import '../core/runner/providers/openai.js';
 import '../core/runner/providers/anthropic.js';
 import '../core/runner/providers/google.js';
 
 const DEFAULT_TIMEOUT_MS = 30000;
+const DEFAULT_CACHE_TTL = 86400;
+
+let sharedCache: ResponseCache | undefined;
 
 const providerApiKeyEnvMap: Record<TestPromptOptions['provider'], string> = {
   openai: 'OPENAI_API_KEY',
@@ -33,6 +37,33 @@ function getLastUserMessageContent(messages: TestPromptOptions['messages']): str
 }
 
 export async function testPrompt(options: TestPromptOptions): Promise<TestPromptResult> {
+  if (options.cache === true) {
+    const cacheKey = ResponseCache.buildCacheKey({
+      provider: options.provider,
+      model: options.model,
+      messages: options.messages,
+      temperature: options.temperature,
+    });
+
+    if (sharedCache === undefined) {
+      sharedCache = new ResponseCache();
+    }
+
+    const ttl = options.cacheTtl ?? DEFAULT_CACHE_TTL;
+    const cached = sharedCache.get(cacheKey, ttl);
+    if (cached !== undefined) {
+      return { ...cached, cached: true };
+    }
+
+    const result = await executePrompt(options);
+    sharedCache.set(cacheKey, result);
+    return result;
+  }
+
+  return executePrompt(options);
+}
+
+async function executePrompt(options: TestPromptOptions): Promise<TestPromptResult> {
   const apiKeyEnv = providerApiKeyEnvMap[options.provider];
   const originalApiKey = process.env[apiKeyEnv];
   const providerConfig: ProviderConfig = {
@@ -50,7 +81,6 @@ export async function testPrompt(options: TestPromptOptions): Promise<TestPrompt
 
   try {
     const provider = getProvider(options.provider);
-    // Provider execute currently accepts only a single prompt string.
     const prompt = getLastUserMessageContent(options.messages);
     const response = await provider.execute(prompt, providerConfig);
 

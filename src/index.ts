@@ -57,6 +57,7 @@ export { Storage } from './storage/index.js';
 
 export { testPrompt, testPromptMulti } from './testing/testPrompt.js';
 export { compareModels } from './testing/compareModels.js';
+export { ResponseCache } from './testing/responseCache.js';
 export { semanticSimilarity } from './testing/semanticSimilarity.js';
 export { assertions } from './testing/assertions.js';
 export type { AssertionDescriptor, RunAllResult } from './testing/assertions.js';
