@@ -885,3 +885,101 @@ describe('bleu', () => {
     expect(result.results[0].type).toBe('bleu');
   });
 });
+
+describe('custom', () => {
+  it('passes when scorer returns pass: true', async () => {
+    const result = await assertions.custom('hello world', {
+      scorer: (output) => ({
+        score: 1.0,
+        pass: output.includes('hello'),
+        reason: 'Contains hello',
+      }),
+    });
+    expect(result.passed).toBe(true);
+    expect(result.type).toBe('custom');
+    expect(result.score).toBe(1.0);
+    expect(result.details).toBeUndefined();
+  });
+
+  it('fails when scorer returns pass: false', async () => {
+    const result = await assertions.custom('hello world', {
+      scorer: () => ({
+        score: 0.0,
+        pass: false,
+        reason: 'Missing citation',
+      }),
+    });
+    expect(result.passed).toBe(false);
+    expect(result.score).toBe(0.0);
+    expect(result.details).toBe('Missing citation');
+  });
+
+  it('passes input to scorer when provided', async () => {
+    let receivedInput: string | undefined;
+    await assertions.custom('response text', {
+      scorer: (_output, input) => {
+        receivedInput = input;
+        return { score: 1.0, pass: true, reason: 'ok' };
+      },
+      input: 'original prompt',
+    });
+    expect(receivedInput).toBe('original prompt');
+  });
+
+  it('supports async scorers', async () => {
+    const result = await assertions.custom('hello world', {
+      scorer: async (output) => {
+        await new Promise((resolve) => setTimeout(resolve, 1));
+        return {
+          score: output.length > 5 ? 1.0 : 0.0,
+          pass: output.length > 5,
+          reason: output.length > 5 ? 'Long enough' : 'Too short',
+        };
+      },
+    });
+    expect(result.passed).toBe(true);
+    expect(result.score).toBe(1.0);
+  });
+
+  it('rounds score to 3 decimal places', async () => {
+    const result = await assertions.custom('test', {
+      scorer: () => ({
+        score: 0.33333333,
+        pass: true,
+        reason: 'ok',
+      }),
+    });
+    expect(result.score).toBe(0.333);
+  });
+
+  it('includes score and reason in actual field', async () => {
+    const result = await assertions.custom('test', {
+      scorer: () => ({
+        score: 0.75,
+        pass: true,
+        reason: 'Partial match',
+      }),
+    });
+    expect(result.actual).toContain('0.75');
+    expect(result.actual).toContain('Partial match');
+  });
+
+  it('uses regex-based citation checker', async () => {
+    const citationScorer = (output: string) => {
+      const hasCitation = /\[\d+\]/.test(output);
+      return {
+        score: hasCitation ? 1.0 : 0.0,
+        pass: hasCitation,
+        reason: hasCitation ? 'Contains citation' : 'Missing citation reference',
+      };
+    };
+
+    const pass = await assertions.custom('See reference [1] for details', {
+      scorer: citationScorer,
+    });
+    expect(pass.passed).toBe(true);
+
+    const fail = await assertions.custom('No references here', { scorer: citationScorer });
+    expect(fail.passed).toBe(false);
+  });
+});

@@ -45,6 +45,8 @@ export type {
   LevenshteinOptions,
   Rouge1Options,
   BleuOptions,
+  CustomScorerResult,
+  CustomScorerOptions,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
