@@ -124,3 +124,17 @@ export class ConfigError extends Error {
     this.name = 'ConfigError';
   }
 }
+
+export interface JudgeOptions {
+  provider?: 'openai' | 'anthropic' | 'google';
+  model?: string;
+  apiKey?: string;
+  temperature?: number;
+  timeoutMs?: number;
+}
+
+export interface JudgeResult {
+  score: number;
+  pass: boolean;
+  reason: string;
+}
