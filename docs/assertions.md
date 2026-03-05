@@ -61,6 +61,27 @@ assertions.runAll(content, [
 
 Both functions are case-insensitive, matching the behavior of `contains()`.
 
+### `containsAll` and `containsAny`
+
+Check if content contains multiple substrings (all or any).
+
+```typescript
+// Programmatic API
+assertions.containsAll('Hello World Test', ['Hello', 'World']); // { passed: true, ... }
+assertions.containsAny('Hello World', ['Goodbye', 'Hello']); // { passed: true, ... }
+
+// With runAll()
+assertions.runAll(content, [
+  { type: 'contains_all', value: ['refund', 'policy', 'days'] },
+  { type: 'contains_any', value: ['error', 'warning', 'failed'] },
+]);
+```
+
+- `containsAll(content, substrings)`: Passes if ALL substrings are found (case-insensitive). Reports missing substrings in details.
+- `containsAny(content, substrings)`: Passes if AT LEAST ONE substring is found (case-insensitive). Reports which one matched or that none did.
+
+Both functions are case-insensitive, matching the behavior of `contains()`.
+
 ### `tone`
 
 Allowed values:
