@@ -138,3 +138,10 @@ export interface JudgeResult {
   pass: boolean;
   reason: string;
 }
+
+export interface LlmRubricOptions {
+  criteria: string;
+  input?: string;
+  threshold?: number;
+  judge?: JudgeOptions;
+}
