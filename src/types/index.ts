@@ -151,3 +151,9 @@ export interface FactualityOptions {
   expected: string;
   judge?: JudgeOptions;
 }
+
+export interface AnswerRelevanceOptions {
+  input: string;
+  threshold?: number;
+  judge?: JudgeOptions;
+}

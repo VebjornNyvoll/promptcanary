@@ -1,11 +1,16 @@
 import type {
+  AnswerRelevanceOptions,
   AssertionResult,
   FactualityOptions,
   JudgeResult,
   LlmRubricOptions,
 } from '../types/index.js';
 import { callJudge } from './judge/index.js';
-import { buildFactualityPrompt, buildRubricPrompt } from './judge/templates.js';
+import {
+  buildAnswerRelevancePrompt,
+  buildFactualityPrompt,
+  buildRubricPrompt,
+} from './judge/templates.js';
 
 function contains(content: string, substring: string): AssertionResult {
   const passed = content.toLowerCase().includes(substring.toLowerCase());
@@ -323,6 +328,15 @@ async function factuality(content: string, options: FactualityOptions): Promise<
   return callJudge({ prompt, ...options.judge });
 }
 
+async function answerRelevance(
+  content: string,
+  options: AnswerRelevanceOptions,
+): Promise<JudgeResult> {
+  const threshold = options.threshold ?? 0.5;
+  const prompt = buildAnswerRelevancePrompt(content, options.input, threshold);
+  return callJudge({ prompt, ...options.judge });
+}
+
 export interface AssertionDescriptor {
   type:
     | 'contains'
@@ -423,5 +437,6 @@ export const assertions = {
   tokenCount,
   llmRubric,
   factuality,
+  answerRelevance,
   runAll,
 } as const;

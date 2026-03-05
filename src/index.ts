@@ -32,6 +32,7 @@ export type {
   JudgeResult,
   LlmRubricOptions,
   FactualityOptions,
+  AnswerRelevanceOptions,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
@@ -51,4 +52,5 @@ export {
   buildCriteriaPrompt,
   buildRubricPrompt,
   buildFactualityPrompt,
+  buildAnswerRelevancePrompt,
 } from './testing/judge/templates.js';
