@@ -280,3 +280,108 @@ describe('assertions', () => {
     });
   });
 });
+
+  describe('containsAll', () => {
+    it('passes when all substrings are found', () => {
+      const result = assertions.containsAll('Your refund will arrive in 30 days', [
+        'refund',
+        'arrive',
+        'days',
+      ]);
+      expect(result.passed).toBe(true);
+      expect(result.type).toBe('contains_all');
+    });
+
+    it('is case-insensitive', () => {
+      const result = assertions.containsAll('REFUND PROCESSED SUCCESSFULLY', [
+        'refund',
+        'processed',
+      ]);
+      expect(result.passed).toBe(true);
+    });
+
+    it('fails when some substrings are missing', () => {
+      const result = assertions.containsAll('Your refund will arrive', [
+        'refund',
+        'error',
+        'days',
+      ]);
+      expect(result.passed).toBe(false);
+      expect(result.details).toContain('error');
+      expect(result.details).toContain('days');
+    });
+
+    it('fails when all substrings are missing', () => {
+      const result = assertions.containsAll('Hello world', ['foo', 'bar', 'baz']);
+      expect(result.passed).toBe(false);
+      expect(result.details).toContain('foo');
+      expect(result.details).toContain('bar');
+      expect(result.details).toContain('baz');
+    });
+
+    it('handles empty array', () => {
+      const result = assertions.containsAll('any content', []);
+      expect(result.passed).toBe(true);
+    });
+
+    it('handles empty content', () => {
+      const result = assertions.containsAll('', ['anything']);
+      expect(result.passed).toBe(false);
+    });
+
+    it('reports all missing substrings in details', () => {
+      const result = assertions.containsAll('test', ['a', 'b', 'c']);
+      expect(result.details).toContain('"a"');
+      expect(result.details).toContain('"b"');
+      expect(result.details).toContain('"c"');
+    });
+  });
+
+  describe('containsAny', () => {
+    it('passes when at least one substring is found', () => {
+      const result = assertions.containsAny('Your refund will arrive in 30 days', [
+        'error',
+        'refund',
+        'warning',
+      ]);
+      expect(result.passed).toBe(true);
+      expect(result.type).toBe('contains_any');
+    });
+
+    it('is case-insensitive', () => {
+      const result = assertions.containsAny('REFUND PROCESSED', ['error', 'refund', 'warning']);
+      expect(result.passed).toBe(true);
+    });
+
+    it('fails when no substrings are found', () => {
+      const result = assertions.containsAny('Your order is confirmed', [
+        'error',
+        'warning',
+        'failed',
+      ]);
+      expect(result.passed).toBe(false);
+      expect(result.details).toContain('None of the substrings found');
+    });
+
+    it('handles empty array', () => {
+      const result = assertions.containsAny('any content', []);
+      expect(result.passed).toBe(false);
+    });
+
+    it('handles empty content', () => {
+      const result = assertions.containsAny('', ['anything']);
+      expect(result.passed).toBe(false);
+    });
+
+    it('reports which substring matched', () => {
+      const result = assertions.containsAny('Hello world', ['foo', 'world', 'bar']);
+      expect(result.passed).toBe(true);
+      expect(result.actual).toContain('world');
+    });
+
+    it('returns first matching substring', () => {
+      const result = assertions.containsAny('abc def ghi', ['def', 'abc', 'ghi']);
+      expect(result.passed).toBe(true);
+      expect(result.actual).toContain('def');
+    });
+  });

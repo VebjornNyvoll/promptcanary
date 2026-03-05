@@ -80,6 +80,48 @@ function endsWith(content: string, suffix: string): AssertionResult {
   };
 }
 
+function containsAll(content: string, substrings: string[]): AssertionResult {
+  const lowerContent = content.toLowerCase();
+  const missing: string[] = [];
+
+  for (const substring of substrings) {
+    if (!lowerContent.includes(substring.toLowerCase())) {
+      missing.push(substring);
+    }
+  }
+
+  const passed = missing.length === 0;
+  return {
+    type: 'contains_all',
+    passed,
+    expected: `contains all of: ${substrings.map((s) => `"${s}"`).join(', ')}`,
+    actual: passed ? 'all found' : `missing: ${missing.map((s) => `"${s}"`).join(', ')}`,
+    details: passed ? undefined : `Missing substrings: ${missing.map((s) => `"${s}"`).join(', ')}`,
+  };
+}
+
+function containsAny(content: string, substrings: string[]): AssertionResult {
+  const lowerContent = content.toLowerCase();
+  let matched: string | undefined;
+
+  for (const substring of substrings) {
+    if (lowerContent.includes(substring.toLowerCase())) {
+      matched = substring;
+      break;
+    }
+  }
+
+  const passed = matched !== undefined;
+  const matchedStr = matched ?? '';
+  return {
+    type: 'contains_any',
+    passed,
+    expected: `contains at least one of: ${substrings.map((s) => `"${s}"`).join(', ')}`,
+    actual: passed ? `found "${matchedStr}"` : 'none found',
+    details: passed ? undefined : `None of the substrings found: ${substrings.map((s) => `"${s}"`).join(', ')}`,
+  };
+}
+
 function isJson(content: string): AssertionResult {
   let passed = false;
   try {
@@ -152,12 +194,14 @@ export interface AssertionDescriptor {
     | 'not_contains'
     | 'starts_with'
     | 'ends_with'
+    | 'contains_all'
+    | 'contains_any'
     | 'max_length'
     | 'min_length'
     | 'regex'
     | 'is_json'
     | 'json_schema';
-  value: string | number | RegExp | Record<string, string>;
+  value: string | number | RegExp | Record<string, string> | string[];
 }
 
 export interface RunAllResult {
@@ -181,6 +225,12 @@ function runAll(content: string, descriptors: AssertionDescriptor[]): RunAllResu
         break;
       case 'ends_with':
         results.push(endsWith(content, descriptor.value as string));
+        break;
+      case 'contains_all':
+        results.push(containsAll(content, descriptor.value as string[]));
+        break;
+      case 'contains_any':
+        results.push(containsAny(content, descriptor.value as string[]));
         break;
       case 'max_length':
         results.push(maxLength(content, Number(descriptor.value)));
@@ -211,6 +261,8 @@ export const assertions = {
   notContains,
   startsWith,
   endsWith,
+  containsAll,
+  containsAny,
   maxLength,
   minLength,
   matchesRegex,
