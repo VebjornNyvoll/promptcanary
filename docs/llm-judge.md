@@ -121,11 +121,44 @@ expect(result.score).toBeGreaterThan(0.7);
 | `threshold` | `number`       | `0.5`   | Score threshold for pass/fail                   |
 | `judge`     | `JudgeOptions` | —       | Judge model configuration                       |
 
+## factuality
+
+Evaluate whether LLM output is factually consistent with a reference answer. Uses a 5-way classification adapted from the autoevals factuality template:
+
+| Category | Description                           | Score |
+| -------- | ------------------------------------- | ----- |
+| (A)      | Subset of expert answer, consistent   | 0.4   |
+| (B)      | Superset of expert answer, consistent | 0.6   |
+| (C)      | Same details as expert answer         | 1.0   |
+| (D)      | Disagrees with expert answer          | 0.0   |
+| (E)      | Differs but not factually relevant    | 1.0   |
+
+```typescript
+import { assertions } from 'promptcanary';
+
+const result = await assertions.factuality(
+  'The company was founded in 2019 by Jane Smith in San Francisco.',
+  {
+    input: 'When was the company founded?',
+    expected: 'The company was founded in 2019 by Jane Smith.',
+    judge: { model: 'gpt-4o-mini' },
+  },
+);
+// result.score → 0.6 (B: superset, consistent)
+```
+
+### FactualityOptions
+
+| Option     | Type           | Default | Description                        |
+| ---------- | -------------- | ------- | ---------------------------------- |
+| `input`    | `string`       | —       | The original question (required)   |
+| `expected` | `string`       | —       | Expert reference answer (required) |
+| `judge`    | `JudgeOptions` | —       | Judge model configuration          |
+
 ## Coming Soon
 
 Specialized scorers building on this infrastructure:
 
-- **`factuality`** — 5-way factual accuracy classification
 - **`answerRelevance`** — Response relevance to the input question
 - **`faithfulness`** — RAG hallucination detection
 - **`toxicity`** — Harmful content detection

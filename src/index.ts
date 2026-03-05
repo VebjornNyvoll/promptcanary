@@ -31,6 +31,7 @@ export type {
   JudgeOptions,
   JudgeResult,
   LlmRubricOptions,
+  FactualityOptions,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
@@ -46,4 +47,8 @@ export { semanticSimilarity } from './testing/semanticSimilarity.js';
 export { assertions } from './testing/assertions.js';
 export type { AssertionDescriptor, RunAllResult } from './testing/assertions.js';
 export { judge, parseJudgeResponse, callJudge } from './testing/judge/index.js';
-export { buildCriteriaPrompt, buildRubricPrompt } from './testing/judge/templates.js';
+export {
+  buildCriteriaPrompt,
+  buildRubricPrompt,
+  buildFactualityPrompt,
+} from './testing/judge/templates.js';

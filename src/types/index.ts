@@ -145,3 +145,9 @@ export interface LlmRubricOptions {
   threshold?: number;
   judge?: JudgeOptions;
 }
+
+export interface FactualityOptions {
+  input: string;
+  expected: string;
+  judge?: JudgeOptions;
+}

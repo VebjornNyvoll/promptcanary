@@ -1,6 +1,11 @@
-import type { AssertionResult, JudgeResult, LlmRubricOptions } from '../types/index.js';
+import type {
+  AssertionResult,
+  FactualityOptions,
+  JudgeResult,
+  LlmRubricOptions,
+} from '../types/index.js';
 import { callJudge } from './judge/index.js';
-import { buildRubricPrompt } from './judge/templates.js';
+import { buildFactualityPrompt, buildRubricPrompt } from './judge/templates.js';
 
 function contains(content: string, substring: string): AssertionResult {
   const passed = content.toLowerCase().includes(substring.toLowerCase());
@@ -313,6 +318,11 @@ async function llmRubric(content: string, options: LlmRubricOptions): Promise<Ju
   return callJudge({ prompt, ...options.judge });
 }
 
+async function factuality(content: string, options: FactualityOptions): Promise<JudgeResult> {
+  const prompt = buildFactualityPrompt(content, options.input, options.expected);
+  return callJudge({ prompt, ...options.judge });
+}
+
 export interface AssertionDescriptor {
   type:
     | 'contains'
@@ -412,5 +422,6 @@ export const assertions = {
   latency,
   tokenCount,
   llmRubric,
+  factuality,
   runAll,
 } as const;

@@ -59,3 +59,42 @@ You MUST respond with ONLY a JSON object in the following format, no other text:
 
 {"score": <number between 0.0 and 1.0>, "pass": <true if score >= ${String(passThreshold)}, false otherwise>, "reason": "<concise explanation>"}`;
 }
+
+export function buildFactualityPrompt(content: string, input: string, expected: string): string {
+  return `You are an expert factuality evaluator. Compare the submission against the expert reference answer.
+
+## Question
+${input}
+
+## Expert Reference Answer
+${expected}
+
+## Submission
+${content}
+
+## Classification
+Choose exactly one category:
+
+(A) The submission is a subset of the expert answer and is fully consistent with it.
+(B) The submission is a superset of the expert answer and is fully consistent with it.
+(C) The submission contains all the same details as the expert answer.
+(D) There is a disagreement between the submission and the expert answer.
+(E) The answers differ, but these differences don't matter from a factual standpoint.
+
+## Scoring
+- (A) Subset, consistent → score 0.4
+- (B) Superset, consistent → score 0.6
+- (C) Same details → score 1.0
+- (D) Disagreement → score 0.0
+- (E) Differs, not factually → score 1.0
+
+## Instructions
+1. Compare the submission to the expert reference answer in the context of the question.
+2. Determine which category (A-E) best describes the relationship.
+3. Assign the corresponding score.
+4. Set pass based on whether the score meets the threshold (score > 0).
+
+You MUST respond with ONLY a JSON object in the following format, no other text:
+
+{"score": <number>, "pass": <boolean>, "reason": "<which category (A-E) and why>"}`;
+}
