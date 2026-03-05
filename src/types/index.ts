@@ -163,3 +163,8 @@ export interface FaithfulnessOptions {
   threshold?: number;
   judge?: JudgeOptions;
 }
+
+export interface ToxicityOptions {
+  threshold?: number;
+  judge?: JudgeOptions;
+}
