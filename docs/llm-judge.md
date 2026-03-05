@@ -91,11 +91,40 @@ import { parseJudgeResponse } from 'promptcanary';
 const result = parseJudgeResponse('{"score": 0.85, "pass": true, "reason": "Meets criteria"}');
 ```
 
+## llmRubric
+
+Evaluate LLM output against custom criteria using a ClosedQA-style rubric. This is the most versatile judge scorer — provide criteria in plain English, and the judge evaluates whether the output meets them.
+
+```typescript
+import { assertions } from 'promptcanary';
+
+const result = await assertions.llmRubric(
+  'Our refund policy allows returns within 30 days of purchase.',
+  {
+    criteria: 'The response should be professional in tone and mention the refund policy',
+    input: 'What is your refund policy?', // optional: original prompt
+    threshold: 0.7, // optional: pass/fail threshold (default: 0.5)
+    judge: { model: 'gpt-4o-mini' }, // optional: judge configuration
+  },
+);
+
+expect(result.pass).toBe(true);
+expect(result.score).toBeGreaterThan(0.7);
+```
+
+### LlmRubricOptions
+
+| Option      | Type           | Default | Description                                     |
+| ----------- | -------------- | ------- | ----------------------------------------------- |
+| `criteria`  | `string`       | —       | Natural language evaluation criteria (required) |
+| `input`     | `string`       | —       | Original user prompt for context                |
+| `threshold` | `number`       | `0.5`   | Score threshold for pass/fail                   |
+| `judge`     | `JudgeOptions` | —       | Judge model configuration                       |
+
 ## Coming Soon
 
 Specialized scorers building on this infrastructure:
 
-- **`llmRubric`** — Custom criteria with structured rubric
 - **`factuality`** — 5-way factual accuracy classification
 - **`answerRelevance`** — Response relevance to the input question
 - **`faithfulness`** — RAG hallucination detection

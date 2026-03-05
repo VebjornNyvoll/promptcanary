@@ -1,4 +1,6 @@
-import type { AssertionResult } from '../types/index.js';
+import type { AssertionResult, JudgeResult, LlmRubricOptions } from '../types/index.js';
+import { callJudge } from './judge/index.js';
+import { buildRubricPrompt } from './judge/templates.js';
 
 function contains(content: string, substring: string): AssertionResult {
   const passed = content.toLowerCase().includes(substring.toLowerCase());
@@ -305,6 +307,12 @@ function tokenCount(
   };
 }
 
+async function llmRubric(content: string, options: LlmRubricOptions): Promise<JudgeResult> {
+  const threshold = options.threshold ?? 0.5;
+  const prompt = buildRubricPrompt(content, options.criteria, options.input, threshold);
+  return callJudge({ prompt, ...options.judge });
+}
+
 export interface AssertionDescriptor {
   type:
     | 'contains'
@@ -403,5 +411,6 @@ export const assertions = {
   matchesJsonSchema,
   latency,
   tokenCount,
+  llmRubric,
   runAll,
 } as const;
