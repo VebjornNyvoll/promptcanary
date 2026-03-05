@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { testPrompt } from '../../src/testing/testPrompt.js';
-import { ProviderError, TimeoutError } from '../../src/types/index.js';
+import { ConfigError, ProviderError, TimeoutError } from '../../src/types/index.js';
 
 const {
   createCompletionMock,
@@ -266,5 +266,102 @@ describe('testPrompt', () => {
 
     await vi.advanceTimersByTimeAsync(10);
     await assertion;
+  });
+
+  it('interpolates {{variables}} in message content', async () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+    createCompletionMock.mockResolvedValue({
+      model: 'gpt-4o-mini',
+      choices: [{ message: { content: 'interpolated response' } }],
+      usage: { prompt_tokens: 5, completion_tokens: 10 },
+    });
+
+    await testPrompt({
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'You are a {{role}} assistant.' },
+        { role: 'user', content: 'Explain {{topic}} in {{style}} terms.' },
+      ],
+      variables: {
+        role: 'customer support',
+        topic: 'our refund policy',
+        style: 'simple',
+      },
+    });
+
+    expect(createCompletionMock.mock.calls[0][0]).toMatchObject({
+      messages: [{ role: 'user', content: 'Explain our refund policy in simple terms.' }],
+    });
+  });
+
+  it('handles variables with whitespace in braces', async () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+    createCompletionMock.mockResolvedValue({
+      model: 'gpt-4o-mini',
+      choices: [{ message: { content: 'ok' } }],
+      usage: { prompt_tokens: 1, completion_tokens: 1 },
+    });
+
+    await testPrompt({
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'Hello {{ name }}' }],
+      variables: { name: 'World' },
+    });
+
+    expect(createCompletionMock.mock.calls[0][0]).toMatchObject({
+      messages: [{ role: 'user', content: 'Hello World' }],
+    });
+  });
+
+  it('throws ConfigError for unresolved variables', async () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+
+    await expect(
+      testPrompt({
+        provider: 'openai',
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: 'Hello {{name}} and {{missing}}' }],
+        variables: { name: 'World' },
+      }),
+    ).rejects.toBeInstanceOf(ConfigError);
+  });
+
+  it('works without variables option', async () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+    createCompletionMock.mockResolvedValue({
+      model: 'gpt-4o-mini',
+      choices: [{ message: { content: 'ok' } }],
+      usage: { prompt_tokens: 1, completion_tokens: 1 },
+    });
+
+    const result = await testPrompt({
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: 'No variables here' }],
+    });
+
+    expect(result.content).toBe('ok');
+  });
+
+  it('replaces multiple occurrences of same variable', async () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+    createCompletionMock.mockResolvedValue({
+      model: 'gpt-4o-mini',
+      choices: [{ message: { content: 'ok' } }],
+      usage: { prompt_tokens: 1, completion_tokens: 1 },
+    });
+
+    await testPrompt({
+      provider: 'openai',
+      model: 'gpt-4o-mini',
+      messages: [{ role: 'user', content: '{{x}} and {{x}}' }],
+      variables: { x: 'hello' },
+    });
+
+    expect(createCompletionMock.mock.calls[0][0]).toMatchObject({
+      messages: [{ role: 'user', content: 'hello and hello' }],
+    });
   });
 });

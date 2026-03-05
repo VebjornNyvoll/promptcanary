@@ -11,6 +11,7 @@ import type { AssertionDescriptor } from './assertions.js';
 import { assertions } from './assertions.js';
 import { getProvider } from '../core/runner/providers/base.js';
 import { ResponseCache } from './responseCache.js';
+import { ConfigError } from '../types/index.js';
 import '../core/runner/providers/openai.js';
 import '../core/runner/providers/anthropic.js';
 import '../core/runner/providers/google.js';
@@ -36,12 +37,42 @@ function getLastUserMessageContent(messages: TestPromptOptions['messages']): str
   return '';
 }
 
+function interpolateMessages(
+  messages: TestPromptOptions['messages'],
+  variables: Record<string, string>,
+): TestPromptOptions['messages'] {
+  return messages.map((msg) => {
+    let content = msg.content;
+    for (const [key, value] of Object.entries(variables)) {
+      const pattern = new RegExp(
+        `\\{\\{\\s*${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\}\\}`,
+        'g',
+      );
+      content = content.replace(pattern, value);
+    }
+
+    const remaining = content.match(/\{\{\s*\w+\s*\}\}/g);
+    if (remaining !== null) {
+      throw new ConfigError(
+        `Unresolved variables in message: ${remaining.join(', ')}. Provide values in the variables option.`,
+      );
+    }
+
+    return { ...msg, content };
+  });
+}
+
 export async function testPrompt(options: TestPromptOptions): Promise<TestPromptResult> {
+  const messages =
+    options.variables !== undefined && Object.keys(options.variables).length > 0
+      ? interpolateMessages(options.messages, options.variables)
+      : options.messages;
+
   if (options.cache === true) {
     const cacheKey = ResponseCache.buildCacheKey({
       provider: options.provider,
       model: options.model,
-      messages: options.messages,
+      messages,
       temperature: options.temperature,
     });
 
@@ -55,15 +86,18 @@ export async function testPrompt(options: TestPromptOptions): Promise<TestPrompt
       return { ...cached, cached: true };
     }
 
-    const result = await executePrompt(options);
+    const result = await executePrompt(options, messages);
     sharedCache.set(cacheKey, result);
     return result;
   }
 
-  return executePrompt(options);
+  return executePrompt(options, messages);
 }
 
-async function executePrompt(options: TestPromptOptions): Promise<TestPromptResult> {
+async function executePrompt(
+  options: TestPromptOptions,
+  messages: TestPromptOptions['messages'],
+): Promise<TestPromptResult> {
   const apiKeyEnv = providerApiKeyEnvMap[options.provider];
   const originalApiKey = process.env[apiKeyEnv];
   const providerConfig: ProviderConfig = {
@@ -81,7 +115,7 @@ async function executePrompt(options: TestPromptOptions): Promise<TestPromptResu
 
   try {
     const provider = getProvider(options.provider);
-    const prompt = getLastUserMessageContent(options.messages);
+    const prompt = getLastUserMessageContent(messages);
     const response = await provider.execute(prompt, providerConfig);
 
     return {
