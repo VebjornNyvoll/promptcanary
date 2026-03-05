@@ -4,6 +4,7 @@ import type {
   FaithfulnessOptions,
   FactualityOptions,
   JudgeResult,
+  LevenshteinOptions,
   LlmRubricOptions,
   ToxicityOptions,
 } from '../types/index.js';
@@ -321,6 +322,77 @@ function tokenCount(
   };
 }
 
+/**
+ * Computes the Levenshtein (edit) distance between two strings using the
+ * Wagner-Fischer algorithm with O(min(m,n)) space.
+ */
+function levenshteinDistance(a: string, b: string): number {
+  if (a === b) return 0;
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+
+  // Ensure b is the shorter string for O(min(m,n)) space
+  if (a.length < b.length) {
+    [a, b] = [b, a];
+  }
+
+  const bLen = b.length;
+  const prev = new Array<number>(bLen + 1);
+
+  for (let j = 0; j <= bLen; j += 1) {
+    prev[j] = j;
+  }
+
+  for (let i = 1; i <= a.length; i += 1) {
+    let prevDiag = prev[0];
+    prev[0] = i;
+
+    for (let j = 1; j <= bLen; j += 1) {
+      const temp = prev[j];
+      if (a[i - 1] === b[j - 1]) {
+        prev[j] = prevDiag;
+      } else {
+        prev[j] = 1 + Math.min(prevDiag, prev[j], prev[j - 1]);
+      }
+      prevDiag = temp;
+    }
+  }
+
+  return prev[bLen];
+}
+
+function levenshtein(
+  content: string,
+  expected: string,
+  options?: LevenshteinOptions,
+): AssertionResult {
+  const maxLen = Math.max(content.length, expected.length);
+  const distance = levenshteinDistance(content, expected);
+  const score = maxLen === 0 ? 1.0 : 1 - distance / maxLen;
+  const roundedScore = Math.round(score * 1000) / 1000;
+
+  const threshold = options?.threshold;
+  const passed = threshold !== undefined ? score >= threshold : true;
+
+  let expected_str: string;
+  if (threshold !== undefined) {
+    expected_str = `Levenshtein score >= ${String(threshold)}`;
+  } else {
+    expected_str = 'Levenshtein distance computed';
+  }
+
+  return {
+    type: 'levenshtein',
+    passed,
+    expected: expected_str,
+    actual: `score: ${String(roundedScore)} (distance: ${String(distance)})`,
+    score: roundedScore,
+    details: passed
+      ? undefined
+      : `Levenshtein score ${String(roundedScore)} is below threshold ${String(threshold)}`,
+  };
+}
+
 async function llmRubric(content: string, options: LlmRubricOptions): Promise<JudgeResult> {
   const threshold = options.threshold ?? 0.5;
   const prompt = buildRubricPrompt(content, options.criteria, options.input, threshold);
@@ -367,14 +439,16 @@ export interface AssertionDescriptor {
     | 'min_length'
     | 'regex'
     | 'is_json'
-    | 'json_schema';
+    | 'json_schema'
+    | 'levenshtein';
   value:
     | string
     | number
     | RegExp
     | Record<string, string>
     | string[]
-    | { min?: number; max?: number };
+    | { min?: number; max?: number }
+    | { expected: string; threshold?: number };
 }
 
 export interface RunAllResult {
@@ -426,6 +500,11 @@ function runAll(content: string, descriptors: AssertionDescriptor[]): RunAllResu
       case 'json_schema':
         results.push(matchesJsonSchema(content, descriptor.value as Record<string, string>));
         break;
+      case 'levenshtein': {
+        const opts = descriptor.value as { expected: string; threshold?: number };
+        results.push(levenshtein(content, opts.expected, { threshold: opts.threshold }));
+        break;
+      }
     }
   }
 
@@ -451,6 +530,7 @@ export const assertions = {
   matchesJsonSchema,
   latency,
   tokenCount,
+  levenshtein,
   llmRubric,
   factuality,
   answerRelevance,

@@ -42,6 +42,7 @@ export type {
   CompareModelsOptions,
   ModelComparisonResult,
   CompareModelsResult,
+  LevenshteinOptions,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';

@@ -77,6 +77,7 @@ export interface AssertionResult {
   expected: string;
   actual: string;
   details?: string;
+  score?: number;
 }
 
 export interface ComparisonResult {
@@ -215,4 +216,8 @@ export interface CompareModelsResult {
   results: ModelComparisonResult[];
   regressions: string[];
   baselineModel: string;
+}
+
+export interface LevenshteinOptions {
+  threshold?: number;
 }
