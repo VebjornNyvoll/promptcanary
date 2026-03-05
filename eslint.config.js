@@ -8,7 +8,7 @@ const tsconfigRootDir = dirname(fileURLToPath(import.meta.url));
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'docs/.vitepress/**'],
+    ignores: ['dist/**', 'coverage/**', 'node_modules/**', 'docs/.vitepress/**', 'examples/**'],
   },
   {
     ...js.configs.recommended,
