@@ -1,6 +1,7 @@
 import type {
   AnswerRelevanceOptions,
   AssertionResult,
+  FaithfulnessOptions,
   FactualityOptions,
   JudgeResult,
   LlmRubricOptions,
@@ -9,6 +10,7 @@ import { callJudge } from './judge/index.js';
 import {
   buildAnswerRelevancePrompt,
   buildFactualityPrompt,
+  buildFaithfulnessPrompt,
   buildRubricPrompt,
 } from './judge/templates.js';
 
@@ -337,6 +339,12 @@ async function answerRelevance(
   return callJudge({ prompt, ...options.judge });
 }
 
+async function faithfulness(content: string, options: FaithfulnessOptions): Promise<JudgeResult> {
+  const threshold = options.threshold ?? 0.5;
+  const prompt = buildFaithfulnessPrompt(content, options.context, threshold);
+  return callJudge({ prompt, ...options.judge });
+}
+
 export interface AssertionDescriptor {
   type:
     | 'contains'
@@ -438,5 +446,6 @@ export const assertions = {
   llmRubric,
   factuality,
   answerRelevance,
+  faithfulness,
   runAll,
 } as const;

@@ -134,3 +134,31 @@ You MUST respond with ONLY a JSON object in the following format, no other text:
 
 {"score": <number between 0.0 and 1.0>, "pass": <true if score >= ${String(threshold)}>, "reason": "<concise explanation>"}`;
 }
+
+export function buildFaithfulnessPrompt(
+  content: string,
+  context: string,
+  threshold: number,
+): string {
+  return `You are an expert evaluator assessing faithfulness. Determine whether the submission stays faithful to the provided context without hallucinating.
+
+## Reference Context
+${context}
+
+## Submission
+${content}
+
+## Instructions
+1. Extract all factual claims from the submission.
+2. For each claim, check whether it is supported by the reference context.
+3. Calculate the faithfulness score: (number of supported claims) / (total claims).
+   - If the submission makes no factual claims, score 1.0.
+   - If all claims are supported by the context, score 1.0.
+   - If some claims are unsupported or contradicted by the context, reduce the score proportionally.
+4. Set pass to true if score >= ${String(threshold)}, false otherwise.
+5. In your reason, mention any unsupported or hallucinated claims.
+
+You MUST respond with ONLY a JSON object in the following format, no other text:
+
+{"score": <number between 0.0 and 1.0>, "pass": <true if score >= ${String(threshold)}>, "reason": "<concise explanation listing any unsupported claims>"}`;
+}
