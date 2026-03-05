@@ -1,11 +1,13 @@
 import type {
   AnswerRelevanceOptions,
   AssertionResult,
+  BleuOptions,
   FaithfulnessOptions,
   FactualityOptions,
   JudgeResult,
   LevenshteinOptions,
   LlmRubricOptions,
+  Rouge1Options,
   ToxicityOptions,
 } from '../types/index.js';
 import { callJudge } from './judge/index.js';
@@ -393,6 +395,166 @@ function levenshtein(
   };
 }
 
+function tokenize(text: string): string[] {
+  return text
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length > 0);
+}
+
+function rouge1(content: string, reference: string, options?: Rouge1Options): AssertionResult {
+  const outputTokens = new Set(tokenize(content));
+  const refTokens = tokenize(reference);
+
+  if (refTokens.length === 0) {
+    const score = outputTokens.size === 0 ? 1.0 : 0.0;
+    const threshold = options?.threshold;
+    const passed = threshold !== undefined ? score >= threshold : true;
+    return {
+      type: 'rouge1',
+      passed,
+      expected:
+        threshold !== undefined
+          ? `ROUGE-1 score >= ${String(threshold)}`
+          : 'ROUGE-1 score computed',
+      actual: `score: ${String(score)}`,
+      score,
+      details: passed
+        ? undefined
+        : `ROUGE-1 score ${String(score)} is below threshold ${String(threshold)}`,
+    };
+  }
+
+  let matches = 0;
+  for (const token of refTokens) {
+    if (outputTokens.has(token)) {
+      matches += 1;
+    }
+  }
+
+  const score = Math.round((matches / refTokens.length) * 1000) / 1000;
+  const threshold = options?.threshold;
+  const passed = threshold !== undefined ? score >= threshold : true;
+
+  return {
+    type: 'rouge1',
+    passed,
+    expected:
+      threshold !== undefined ? `ROUGE-1 score >= ${String(threshold)}` : 'ROUGE-1 score computed',
+    actual: `score: ${String(score)} (${String(matches)}/${String(refTokens.length)} reference tokens matched)`,
+    score,
+    details: passed
+      ? undefined
+      : `ROUGE-1 score ${String(score)} is below threshold ${String(threshold)}`,
+  };
+}
+
+function getNgrams(tokens: string[], n: number): Map<string, number> {
+  const ngrams = new Map<string, number>();
+  for (let i = 0; i <= tokens.length - n; i += 1) {
+    const gram = tokens.slice(i, i + n).join(' ');
+    ngrams.set(gram, (ngrams.get(gram) ?? 0) + 1);
+  }
+  return ngrams;
+}
+
+function bleu(content: string, reference: string, options?: BleuOptions): AssertionResult {
+  const outputTokens = tokenize(content);
+  const refTokens = tokenize(reference);
+  const threshold = options?.threshold;
+
+  if (outputTokens.length === 0) {
+    const score = refTokens.length === 0 ? 1.0 : 0.0;
+    const passed = threshold !== undefined ? score >= threshold : true;
+    return {
+      type: 'bleu',
+      passed,
+      expected:
+        threshold !== undefined ? `BLEU score >= ${String(threshold)}` : 'BLEU score computed',
+      actual: `score: ${String(score)}`,
+      score,
+      details: passed
+        ? undefined
+        : `BLEU score ${String(score)} is below threshold ${String(threshold)}`,
+    };
+  }
+
+  if (refTokens.length === 0) {
+    const passed = threshold !== undefined ? false : true;
+    return {
+      type: 'bleu',
+      passed,
+      expected:
+        threshold !== undefined ? `BLEU score >= ${String(threshold)}` : 'BLEU score computed',
+      actual: 'score: 0',
+      score: 0,
+      details: passed ? undefined : `BLEU score 0 is below threshold ${String(threshold)}`,
+    };
+  }
+
+  // Compute modified n-gram precision for n=1..4
+  let logPrecisionSum = 0;
+  let ngramCount = 0;
+
+  for (let n = 1; n <= 4; n += 1) {
+    const outGrams = getNgrams(outputTokens, n);
+    const refGrams = getNgrams(refTokens, n);
+
+    if (outGrams.size === 0) break;
+
+    let clippedMatches = 0;
+    let totalOut = 0;
+
+    for (const [gram, count] of outGrams) {
+      const refCount = refGrams.get(gram) ?? 0;
+      clippedMatches += Math.min(count, refCount);
+      totalOut += count;
+    }
+
+    if (totalOut === 0) break;
+
+    const precision = clippedMatches / totalOut;
+    if (precision === 0) break;
+
+    logPrecisionSum += Math.log(precision);
+    ngramCount += 1;
+  }
+
+  if (ngramCount === 0) {
+    const passed = threshold !== undefined ? false : true;
+    return {
+      type: 'bleu',
+      passed,
+      expected:
+        threshold !== undefined ? `BLEU score >= ${String(threshold)}` : 'BLEU score computed',
+      actual: 'score: 0',
+      score: 0,
+      details: passed ? undefined : `BLEU score 0 is below threshold ${String(threshold)}`,
+    };
+  }
+
+  const brevityPenalty =
+    outputTokens.length >= refTokens.length
+      ? 1.0
+      : Math.exp(1 - refTokens.length / outputTokens.length);
+
+  const rawScore = brevityPenalty * Math.exp(logPrecisionSum / ngramCount);
+  const score = Math.round(Math.min(rawScore, 1.0) * 1000) / 1000;
+  const passed = threshold !== undefined ? score >= threshold : true;
+
+  return {
+    type: 'bleu',
+    passed,
+    expected:
+      threshold !== undefined ? `BLEU score >= ${String(threshold)}` : 'BLEU score computed',
+    actual: `score: ${String(score)}`,
+    score,
+    details: passed
+      ? undefined
+      : `BLEU score ${String(score)} is below threshold ${String(threshold)}`,
+  };
+}
+
 async function llmRubric(content: string, options: LlmRubricOptions): Promise<JudgeResult> {
   const threshold = options.threshold ?? 0.5;
   const prompt = buildRubricPrompt(content, options.criteria, options.input, threshold);
@@ -440,7 +602,9 @@ export interface AssertionDescriptor {
     | 'regex'
     | 'is_json'
     | 'json_schema'
-    | 'levenshtein';
+    | 'levenshtein'
+    | 'rouge1'
+    | 'bleu';
   value:
     | string
     | number
@@ -505,6 +669,16 @@ function runAll(content: string, descriptors: AssertionDescriptor[]): RunAllResu
         results.push(levenshtein(content, opts.expected, { threshold: opts.threshold }));
         break;
       }
+      case 'rouge1': {
+        const opts = descriptor.value as { expected: string; threshold?: number };
+        results.push(rouge1(content, opts.expected, { threshold: opts.threshold }));
+        break;
+      }
+      case 'bleu': {
+        const opts = descriptor.value as { expected: string; threshold?: number };
+        results.push(bleu(content, opts.expected, { threshold: opts.threshold }));
+        break;
+      }
     }
   }
 
@@ -531,6 +705,8 @@ export const assertions = {
   latency,
   tokenCount,
   levenshtein,
+  rouge1,
+  bleu,
   llmRubric,
   factuality,
   answerRelevance,

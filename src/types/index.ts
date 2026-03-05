@@ -221,3 +221,11 @@ export interface CompareModelsResult {
 export interface LevenshteinOptions {
   threshold?: number;
 }
+
+export interface Rouge1Options {
+  threshold?: number;
+}
+
+export interface BleuOptions {
+  threshold?: number;
+}

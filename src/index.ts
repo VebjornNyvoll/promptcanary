@@ -43,6 +43,8 @@ export type {
   ModelComparisonResult,
   CompareModelsResult,
   LevenshteinOptions,
+  Rouge1Options,
+  BleuOptions,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
