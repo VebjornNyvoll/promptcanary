@@ -32,6 +32,7 @@ export interface TestPromptOptions {
   timeoutMs?: number;
   cache?: boolean;
   cacheTtl?: number;
+  variables?: Record<string, string>;
 }
 
 export interface TestPromptResult {
