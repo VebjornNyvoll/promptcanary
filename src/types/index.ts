@@ -187,3 +187,32 @@ export interface MultiRunAssertionResult {
   passed: boolean;
   results: AssertionResult[];
 }
+
+export interface CompareModelsModelConfig {
+  provider: 'openai' | 'anthropic' | 'google';
+  model: string;
+  apiKey?: string;
+}
+
+export interface CompareModelsOptions {
+  models: CompareModelsModelConfig[];
+  messages: ChatMessage[];
+  temperature?: number;
+  maxTokens?: number;
+  timeoutMs?: number;
+}
+
+export interface ModelComparisonResult {
+  model: string;
+  provider: string;
+  response: TestPromptResult;
+  passed: boolean;
+  results: AssertionResult[];
+  regressions: string[];
+}
+
+export interface CompareModelsResult {
+  results: ModelComparisonResult[];
+  regressions: string[];
+  baselineModel: string;
+}
