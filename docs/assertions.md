@@ -82,6 +82,43 @@ assertions.runAll(content, [
 
 Both functions are case-insensitive, matching the behavior of `contains()`.
 
+### `caseSensitiveContains`
+
+Check if content contains a substring with exact case matching.
+
+```typescript
+// Programmatic API
+assertions.caseSensitiveContains('Hello World', 'Hello'); // { passed: true, ... }
+assertions.caseSensitiveContains('Hello World', 'hello'); // { passed: false, ... }
+
+// With runAll()
+assertions.runAll(content, [{ type: 'case_sensitive_contains', value: 'Error' }]);
+```
+
+Unlike `contains()` which is case-insensitive, `caseSensitiveContains()` requires exact case matching. Use this when you need to verify that specific capitalization is present in the response.
+
+### `wordCount`
+
+Check if content has a specific number of words within optional min/max bounds.
+
+```typescript
+// Programmatic API
+assertions.wordCount('one two three four five', { min: 3, max: 10 }); // { passed: true, ... }
+assertions.wordCount('hello world', { min: 5 }); // { passed: false, ... }
+
+// With runAll()
+assertions.runAll(content, [
+  { type: 'word_count', value: { min: 10, max: 100 } },
+  { type: 'word_count', value: { max: 50 } },
+]);
+```
+
+- `wordCount(content, options)`: Counts words by splitting on whitespace. Passes if word count is within specified bounds.
+  - `options.min`: Minimum word count (optional)
+  - `options.max`: Maximum word count (optional)
+  - If neither is specified, any word count passes
+  - Empty or whitespace-only content counts as 0 words
+
 ### `tone`
 
 Allowed values:
