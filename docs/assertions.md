@@ -119,6 +119,81 @@ assertions.runAll(content, [
   - If neither is specified, any word count passes
   - Empty or whitespace-only content counts as 0 words
 
+## Operational assertions
+
+Operational assertions check performance and resource metrics from the test result, not the response content.
+
+### `latency`
+
+Check if response latency is within acceptable limits.
+
+```typescript
+// Programmatic API
+const result = await testPrompt({
+  /* ... */
+});
+assertions.latency(result.latencyMs, { max: 500 }); // { passed: true, ... }
+
+// Typical usage in tests
+it('responds within 500ms', async () => {
+  const result = await testPrompt({
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+    messages: [{ role: 'user', content: 'Hello' }],
+  });
+  expect(assertions.latency(result.latencyMs, { max: 500 }).passed).toBe(true);
+});
+```
+
+- `latency(latencyMs, options)`: Checks response latency in milliseconds.
+  - `latencyMs`: The latency value from `TestPromptResult.latencyMs`
+  - `options.max`: Maximum acceptable latency in milliseconds (required)
+  - Passes if `latencyMs <= max`
+
+### `tokenCount`
+
+Check if token usage is within acceptable limits.
+
+```typescript
+// Programmatic API
+const result = await testPrompt({
+  /* ... */
+});
+assertions.tokenCount(result.tokenUsage, { max: 1000 }); // { passed: true, ... }
+
+// Check specific token types
+assertions.tokenCount(result.tokenUsage, {
+  maxPrompt: 500,
+  maxCompletion: 500,
+});
+
+// Check all limits simultaneously
+assertions.tokenCount(result.tokenUsage, {
+  max: 1000,
+  maxPrompt: 500,
+  maxCompletion: 500,
+});
+
+// Typical usage in tests
+it('uses tokens efficiently', async () => {
+  const result = await testPrompt({
+    provider: 'openai',
+    model: 'gpt-4o-mini',
+    messages: [{ role: 'user', content: 'Summarize this...' }],
+  });
+  expect(assertions.tokenCount(result.tokenUsage, { max: 1000 }).passed).toBe(true);
+});
+```
+
+- `tokenCount(tokenUsage, options)`: Checks token usage metrics.
+  - `tokenUsage`: The token usage object from `TestPromptResult.tokenUsage` with `{ prompt: number, completion: number }`
+  - `options.max`: Maximum total tokens (prompt + completion) (optional)
+  - `options.maxPrompt`: Maximum prompt tokens (optional)
+  - `options.maxCompletion`: Maximum completion tokens (optional)
+  - Passes if all specified limits are met
+  - At least one limit must be specified
+  - Useful for monitoring API costs and ensuring efficient prompt design
+
 ### `tone`
 
 Allowed values:

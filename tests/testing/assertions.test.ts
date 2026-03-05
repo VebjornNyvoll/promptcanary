@@ -516,3 +516,164 @@ describe('wordCount', () => {
     expect(result.details).toContain('5 words');
   });
 });
+
+describe('latency', () => {
+  it('passes when latency is within limit', () => {
+    const result = assertions.latency(100, { max: 500 });
+    expect(result.passed).toBe(true);
+    expect(result.type).toBe('latency');
+  });
+
+  it('passes when latency equals limit', () => {
+    const result = assertions.latency(500, { max: 500 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when latency exceeds limit', () => {
+    const result = assertions.latency(600, { max: 500 });
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('exceeding');
+  });
+
+  it('handles zero latency', () => {
+    const result = assertions.latency(0, { max: 100 });
+    expect(result.passed).toBe(true);
+    expect(result.actual).toBe('0ms');
+  });
+
+  it('reports correct expected value', () => {
+    const result = assertions.latency(100, { max: 500 });
+    expect(result.expected).toBe('<= 500ms');
+  });
+
+  it('reports correct actual value', () => {
+    const result = assertions.latency(250, { max: 500 });
+    expect(result.actual).toBe('250ms');
+  });
+
+  it('includes latency and limit in failure details', () => {
+    const result = assertions.latency(1000, { max: 500 });
+    expect(result.details).toContain('1000ms');
+    expect(result.details).toContain('500ms');
+  });
+
+  it('has no details when passing', () => {
+    const result = assertions.latency(100, { max: 500 });
+    expect(result.details).toBeUndefined();
+  });
+});
+
+describe('tokenCount', () => {
+  it('passes when total tokens within limit', () => {
+    const result = assertions.tokenCount({ prompt: 100, completion: 50 }, { max: 200 });
+    expect(result.passed).toBe(true);
+    expect(result.type).toBe('token_count');
+  });
+
+  it('passes when total tokens equals limit', () => {
+    const result = assertions.tokenCount({ prompt: 100, completion: 100 }, { max: 200 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when total tokens exceed limit', () => {
+    const result = assertions.tokenCount({ prompt: 150, completion: 100 }, { max: 200 });
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('total tokens');
+  });
+
+  it('passes when prompt tokens within limit', () => {
+    const result = assertions.tokenCount({ prompt: 100, completion: 50 }, { maxPrompt: 150 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when prompt tokens exceed limit', () => {
+    const result = assertions.tokenCount({ prompt: 200, completion: 50 }, { maxPrompt: 150 });
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('prompt tokens');
+  });
+
+  it('passes when completion tokens within limit', () => {
+    const result = assertions.tokenCount({ prompt: 100, completion: 50 }, { maxCompletion: 100 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when completion tokens exceed limit', () => {
+    const result = assertions.tokenCount({ prompt: 100, completion: 150 }, { maxCompletion: 100 });
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('completion tokens');
+  });
+
+  it('handles multiple limits simultaneously', () => {
+    const result = assertions.tokenCount(
+      { prompt: 100, completion: 50 },
+      { max: 200, maxPrompt: 150, maxCompletion: 100 },
+    );
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when multiple limits are exceeded', () => {
+    const result = assertions.tokenCount(
+      { prompt: 200, completion: 150 },
+      { max: 200, maxPrompt: 150, maxCompletion: 100 },
+    );
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('total tokens');
+    expect(result.details).toContain('prompt tokens');
+    expect(result.details).toContain('completion tokens');
+  });
+
+  it('handles zero tokens', () => {
+    const result = assertions.tokenCount({ prompt: 0, completion: 0 }, { max: 100 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('reports correct actual value', () => {
+    const result = assertions.tokenCount({ prompt: 100, completion: 50 }, { max: 200 });
+    expect(result.actual).toContain('prompt: 100');
+    expect(result.actual).toContain('completion: 50');
+  });
+
+  it('reports correct expected value with single limit', () => {
+    const result = assertions.tokenCount({ prompt: 100, completion: 50 }, { max: 200 });
+    expect(result.expected).toContain('total <= 200');
+  });
+
+  it('reports correct expected value with multiple limits', () => {
+    const result = assertions.tokenCount(
+      { prompt: 100, completion: 50 },
+      { max: 200, maxPrompt: 150, maxCompletion: 100 },
+    );
+    expect(result.expected).toContain('total <= 200');
+    expect(result.expected).toContain('prompt <= 150');
+    expect(result.expected).toContain('completion <= 100');
+  });
+
+  it('has no details when passing', () => {
+    const result = assertions.tokenCount({ prompt: 100, completion: 50 }, { max: 200 });
+    expect(result.details).toBeUndefined();
+  });
+
+  it('handles edge case: prompt at boundary', () => {
+    const result = assertions.tokenCount({ prompt: 150, completion: 50 }, { maxPrompt: 150 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('handles edge case: completion at boundary', () => {
+    const result = assertions.tokenCount({ prompt: 100, completion: 100 }, { maxCompletion: 100 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('handles edge case: total at boundary', () => {
+    const result = assertions.tokenCount({ prompt: 100, completion: 100 }, { max: 200 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when only one of multiple limits is exceeded', () => {
+    const result = assertions.tokenCount(
+      { prompt: 200, completion: 50 },
+      { max: 300, maxPrompt: 150 },
+    );
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('prompt tokens');
+  });
+});

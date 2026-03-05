@@ -237,6 +237,74 @@ function matchesJsonSchema(content: string, schema: Record<string, string>): Ass
   };
 }
 
+function latency(latencyMs: number, options: { max: number }): AssertionResult {
+  const passed = latencyMs <= options.max;
+  return {
+    type: 'latency',
+    passed,
+    expected: `<= ${String(options.max)}ms`,
+    actual: `${String(latencyMs)}ms`,
+    details: passed
+      ? undefined
+      : `Response took ${String(latencyMs)}ms, exceeding ${String(options.max)}ms limit`,
+  };
+}
+
+function tokenCount(
+  tokenUsage: { prompt: number; completion: number },
+  options: { max?: number; maxPrompt?: number; maxCompletion?: number },
+): AssertionResult {
+  const exceeded: string[] = [];
+
+  if (options.max !== undefined) {
+    const total = tokenUsage.prompt + tokenUsage.completion;
+    if (total > options.max) {
+      exceeded.push(`total tokens (${String(total)}) exceeds max ${String(options.max)}`);
+    }
+  }
+
+  if (options.maxPrompt !== undefined) {
+    if (tokenUsage.prompt > options.maxPrompt) {
+      exceeded.push(
+        `prompt tokens (${String(tokenUsage.prompt)}) exceeds max ${String(options.maxPrompt)}`,
+      );
+    }
+  }
+
+  if (options.maxCompletion !== undefined) {
+    if (tokenUsage.completion > options.maxCompletion) {
+      exceeded.push(
+        `completion tokens (${String(tokenUsage.completion)}) exceeds max ${String(options.maxCompletion)}`,
+      );
+    }
+  }
+
+  const passed = exceeded.length === 0;
+
+  let expected = '';
+  const limits: string[] = [];
+  if (options.max !== undefined) {
+    limits.push(`total <= ${String(options.max)}`);
+  }
+  if (options.maxPrompt !== undefined) {
+    limits.push(`prompt <= ${String(options.maxPrompt)}`);
+  }
+  if (options.maxCompletion !== undefined) {
+    limits.push(`completion <= ${String(options.maxCompletion)}`);
+  }
+  expected = limits.join(', ');
+
+  const actual = `prompt: ${String(tokenUsage.prompt)}, completion: ${String(tokenUsage.completion)}`;
+
+  return {
+    type: 'token_count',
+    passed,
+    expected,
+    actual,
+    details: passed ? undefined : exceeded.join('; '),
+  };
+}
+
 export interface AssertionDescriptor {
   type:
     | 'contains'
@@ -333,5 +401,7 @@ export const assertions = {
   matchesRegex,
   isJson,
   matchesJsonSchema,
+  latency,
+  tokenCount,
   runAll,
 } as const;
