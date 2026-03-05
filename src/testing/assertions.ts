@@ -58,6 +58,28 @@ function matchesRegex(content: string, pattern: RegExp | string): AssertionResul
   };
 }
 
+function startsWith(content: string, prefix: string): AssertionResult {
+  const passed = content.toLowerCase().startsWith(prefix.toLowerCase());
+  return {
+    type: 'starts_with',
+    passed,
+    expected: `starts with "${prefix}"`,
+    actual: passed ? 'matched' : 'no match',
+    details: passed ? undefined : `Content does not start with "${prefix}"`,
+  };
+}
+
+function endsWith(content: string, suffix: string): AssertionResult {
+  const passed = content.toLowerCase().endsWith(suffix.toLowerCase());
+  return {
+    type: 'ends_with',
+    passed,
+    expected: `ends with "${suffix}"`,
+    actual: passed ? 'matched' : 'no match',
+    details: passed ? undefined : `Content does not end with "${suffix}"`,
+  };
+}
+
 function isJson(content: string): AssertionResult {
   let passed = false;
   try {
@@ -128,6 +150,8 @@ export interface AssertionDescriptor {
   type:
     | 'contains'
     | 'not_contains'
+    | 'starts_with'
+    | 'ends_with'
     | 'max_length'
     | 'min_length'
     | 'regex'
@@ -151,6 +175,12 @@ function runAll(content: string, descriptors: AssertionDescriptor[]): RunAllResu
         break;
       case 'not_contains':
         results.push(notContains(content, descriptor.value as string));
+        break;
+      case 'starts_with':
+        results.push(startsWith(content, descriptor.value as string));
+        break;
+      case 'ends_with':
+        results.push(endsWith(content, descriptor.value as string));
         break;
       case 'max_length':
         results.push(maxLength(content, Number(descriptor.value)));
@@ -179,6 +209,8 @@ function runAll(content: string, descriptors: AssertionDescriptor[]): RunAllResu
 export const assertions = {
   contains,
   notContains,
+  startsWith,
+  endsWith,
   maxLength,
   minLength,
   matchesRegex,

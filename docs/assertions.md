@@ -43,6 +43,24 @@ expect:
   must_not_contain: [I cannot help, error]
 ```
 
+### `startsWith` and `endsWith`
+
+Check if content begins or ends with a specific string (case-insensitive).
+
+```typescript
+// Programmatic API
+assertions.startsWith('Hello World', 'Hello'); // { passed: true, ... }
+assertions.endsWith('Hello World', 'World'); // { passed: true, ... }
+
+// With runAll()
+assertions.runAll(content, [
+  { type: 'starts_with', value: 'Dear Customer' },
+  { type: 'ends_with', value: 'Best regards' },
+]);
+```
+
+Both functions are case-insensitive, matching the behavior of `contains()`.
+
 ### `tone`
 
 Allowed values:
