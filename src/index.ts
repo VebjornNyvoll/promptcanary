@@ -34,6 +34,7 @@ export type {
   FactualityOptions,
   AnswerRelevanceOptions,
   FaithfulnessOptions,
+  ToxicityOptions,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
@@ -55,4 +56,5 @@ export {
   buildFactualityPrompt,
   buildAnswerRelevancePrompt,
   buildFaithfulnessPrompt,
+  buildToxicityPrompt,
 } from './testing/judge/templates.js';

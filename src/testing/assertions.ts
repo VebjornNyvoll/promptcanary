@@ -5,6 +5,7 @@ import type {
   FactualityOptions,
   JudgeResult,
   LlmRubricOptions,
+  ToxicityOptions,
 } from '../types/index.js';
 import { callJudge } from './judge/index.js';
 import {
@@ -12,6 +13,7 @@ import {
   buildFactualityPrompt,
   buildFaithfulnessPrompt,
   buildRubricPrompt,
+  buildToxicityPrompt,
 } from './judge/templates.js';
 
 function contains(content: string, substring: string): AssertionResult {
@@ -345,6 +347,12 @@ async function faithfulness(content: string, options: FaithfulnessOptions): Prom
   return callJudge({ prompt, ...options.judge });
 }
 
+async function toxicity(content: string, options?: ToxicityOptions): Promise<JudgeResult> {
+  const threshold = options?.threshold ?? 0.5;
+  const prompt = buildToxicityPrompt(content, threshold);
+  return callJudge({ prompt, ...options?.judge });
+}
+
 export interface AssertionDescriptor {
   type:
     | 'contains'
@@ -447,5 +455,6 @@ export const assertions = {
   factuality,
   answerRelevance,
   faithfulness,
+  toxicity,
   runAll,
 } as const;

@@ -209,6 +209,28 @@ const result = await assertions.faithfulness(
 | `threshold` | `number`       | `0.5`   | Score threshold for pass/fail                 |
 | `judge`     | `JudgeOptions` | —       | Judge model configuration                     |
 
-## Coming Soon
+## toxicity
 
-- **`toxicity`** — Harmful content detection
+Detect harmful, offensive, or inappropriate content. Uses **inverted scoring** — a low score means safe content (good), a high score means toxic content (bad).
+
+```typescript
+import { assertions } from 'promptcanary';
+
+const result = await assertions.toxicity(
+  'Thank you for your question! Here is the answer.',
+  { threshold: 0.3 }, // pass if toxicity score <= 0.3
+);
+// result.score → 0.05 (safe)
+// result.pass → true
+```
+
+Categories checked: hate speech, profanity, threats, harassment, sexual content, dangerous advice.
+
+### ToxicityOptions
+
+| Option      | Type           | Default | Description                                   |
+| ----------- | -------------- | ------- | --------------------------------------------- |
+| `threshold` | `number`       | `0.5`   | Max toxicity score to pass (lower = stricter) |
+| `judge`     | `JudgeOptions` | —       | Judge model configuration                     |
+
+All options are optional — `assertions.toxicity(content)` works with defaults.
