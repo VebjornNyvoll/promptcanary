@@ -35,6 +35,9 @@ export type {
   AnswerRelevanceOptions,
   FaithfulnessOptions,
   ToxicityOptions,
+  TestPromptMultiOptions,
+  MultiRunResult,
+  MultiRunAssertionResult,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
@@ -45,7 +48,7 @@ export { compareResponse } from './core/comparator/index.js';
 // Storage exports
 export { Storage } from './storage/index.js';
 
-export { testPrompt } from './testing/testPrompt.js';
+export { testPrompt, testPromptMulti } from './testing/testPrompt.js';
 export { semanticSimilarity } from './testing/semanticSimilarity.js';
 export { assertions } from './testing/assertions.js';
 export type { AssertionDescriptor, RunAllResult } from './testing/assertions.js';

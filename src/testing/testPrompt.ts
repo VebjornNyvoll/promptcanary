@@ -1,4 +1,14 @@
-import type { ProviderConfig, TestPromptOptions, TestPromptResult } from '../types/index.js';
+import type {
+  AssertionResult,
+  MultiRunAssertionResult,
+  MultiRunResult,
+  ProviderConfig,
+  TestPromptMultiOptions,
+  TestPromptOptions,
+  TestPromptResult,
+} from '../types/index.js';
+import type { AssertionDescriptor } from './assertions.js';
+import { assertions } from './assertions.js';
 import { getProvider } from '../core/runner/providers/base.js';
 import '../core/runner/providers/openai.js';
 import '../core/runner/providers/anthropic.js';
@@ -63,4 +73,49 @@ export async function testPrompt(options: TestPromptOptions): Promise<TestPrompt
       }
     }
   }
+}
+
+export async function testPromptMulti(
+  options: TestPromptMultiOptions,
+  descriptors?: AssertionDescriptor[],
+  passRate?: number,
+): Promise<MultiRunResult> {
+  if (options.runs < 1) {
+    throw new Error('runs must be at least 1');
+  }
+
+  const effectivePassRate = passRate ?? 1.0;
+  const { runs, ...promptOptions } = options;
+
+  const promises: Promise<TestPromptResult>[] = [];
+  for (let i = 0; i < runs; i += 1) {
+    promises.push(testPrompt(promptOptions));
+  }
+
+  const responses = await Promise.all(promises);
+
+  const assertionResults: MultiRunAssertionResult[] = responses.map((response) => {
+    if (descriptors === undefined || descriptors.length === 0) {
+      return { response, passed: true, results: [] as AssertionResult[] };
+    }
+    const runAllResult = assertions.runAll(response.content, descriptors);
+    return {
+      response,
+      passed: runAllResult.passed,
+      results: runAllResult.results,
+    };
+  });
+
+  const passedRuns = assertionResults.filter((r) => r.passed).length;
+  const actualPassRate = passedRuns / runs;
+  const passed = actualPassRate >= effectivePassRate;
+
+  return {
+    passed,
+    passRate: actualPassRate,
+    totalRuns: runs,
+    passedRuns,
+    responses,
+    assertionResults,
+  };
 }

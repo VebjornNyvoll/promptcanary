@@ -168,3 +168,22 @@ export interface ToxicityOptions {
   threshold?: number;
   judge?: JudgeOptions;
 }
+
+export interface TestPromptMultiOptions extends TestPromptOptions {
+  runs: number;
+}
+
+export interface MultiRunResult {
+  passed: boolean;
+  passRate: number;
+  totalRuns: number;
+  passedRuns: number;
+  responses: TestPromptResult[];
+  assertionResults: MultiRunAssertionResult[];
+}
+
+export interface MultiRunAssertionResult {
+  response: TestPromptResult;
+  passed: boolean;
+  results: AssertionResult[];
+}
