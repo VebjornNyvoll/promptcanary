@@ -119,6 +119,33 @@ assertions.runAll(content, [
   - If neither is specified, any word count passes
   - Empty or whitespace-only content counts as 0 words
 
+### `levenshtein`
+
+Compute normalized Levenshtein (edit distance) similarity between response content and expected text. Returns a score from 0.0 (completely different) to 1.0 (identical). Works locally with no API calls.
+
+```typescript
+// Programmatic API — score only (always passes)
+assertions.levenshtein('hello world', 'hello world'); // { passed: true, score: 1.0, ... }
+
+// With threshold — pass/fail based on minimum score
+assertions.levenshtein('hello world', 'hello wrold', { threshold: 0.8 });
+// { passed: true, score: 0.909, ... }
+
+assertions.levenshtein('abc', 'xyz', { threshold: 0.5 });
+// { passed: false, score: 0.0, ... }
+
+// With runAll()
+assertions.runAll(content, [
+  { type: 'levenshtein', value: { expected: 'expected output', threshold: 0.7 } },
+]);
+```
+
+- `levenshtein(content, expected, options?)`: Normalized edit distance scorer.
+  - `expected`: The reference string to compare against
+  - `options.threshold`: Minimum score to pass (optional — without it, always passes)
+  - Formula: `1 - editDistance / max(content.length, expected.length)`
+  - Score of 1.0 = identical strings, 0.0 = completely different
+
 ## Operational assertions
 
 Operational assertions check performance and resource metrics from the test result, not the response content.

@@ -677,3 +677,81 @@ describe('tokenCount', () => {
     expect(result.details).toContain('prompt tokens');
   });
 });
+
+describe('levenshtein', () => {
+  it('returns score 1.0 for identical strings', () => {
+    const result = assertions.levenshtein('hello world', 'hello world');
+    expect(result.passed).toBe(true);
+    expect(result.score).toBe(1.0);
+    expect(result.type).toBe('levenshtein');
+  });
+
+  it('returns score 0.0 for completely different strings', () => {
+    const result = assertions.levenshtein('abc', 'xyz');
+    expect(result.passed).toBe(true);
+    expect(result.score).toBe(0.0);
+  });
+
+  it('returns correct score for similar strings', () => {
+    const result = assertions.levenshtein('kitten', 'sitting');
+    expect(result.score).toBeGreaterThan(0.4);
+    expect(result.score).toBeLessThan(0.6);
+  });
+
+  it('passes when score meets threshold', () => {
+    const result = assertions.levenshtein('hello world', 'hello wrold', { threshold: 0.8 });
+    expect(result.passed).toBe(true);
+    expect(result.score).toBeGreaterThanOrEqual(0.8);
+  });
+
+  it('fails when score is below threshold', () => {
+    const result = assertions.levenshtein('abc', 'xyz', { threshold: 0.5 });
+    expect(result.passed).toBe(false);
+    expect(result.score).toBe(0.0);
+    expect(result.details).toContain('below threshold');
+  });
+
+  it('always passes without threshold', () => {
+    const result = assertions.levenshtein('abc', 'xyz');
+    expect(result.passed).toBe(true);
+  });
+
+  it('handles empty strings', () => {
+    const result1 = assertions.levenshtein('', '');
+    expect(result1.score).toBe(1.0);
+
+    const result2 = assertions.levenshtein('', 'hello');
+    expect(result2.score).toBe(0.0);
+
+    const result3 = assertions.levenshtein('hello', '');
+    expect(result3.score).toBe(0.0);
+  });
+
+  it('handles single character difference', () => {
+    const result = assertions.levenshtein('cat', 'bat');
+    expect(result.score).toBeCloseTo(0.667, 2);
+  });
+
+  it('is case-sensitive', () => {
+    const result = assertions.levenshtein('Hello', 'hello');
+    expect(result.score).toBeLessThan(1.0);
+  });
+
+  it('works in runAll with levenshtein descriptor', () => {
+    const descriptors: AssertionDescriptor[] = [
+      { type: 'levenshtein', value: { expected: 'hello world', threshold: 0.8 } },
+    ];
+    const result = assertions.runAll('hello world', descriptors);
+    expect(result.passed).toBe(true);
+    expect(result.results[0].type).toBe('levenshtein');
+    expect(result.results[0].score).toBe(1.0);
+  });
+
+  it('fails in runAll when below threshold', () => {
+    const descriptors: AssertionDescriptor[] = [
+      { type: 'levenshtein', value: { expected: 'completely different text', threshold: 0.9 } },
+    ];
+    const result = assertions.runAll('hello world', descriptors);
+    expect(result.passed).toBe(false);
+  });
+});
