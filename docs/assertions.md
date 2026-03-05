@@ -146,6 +146,56 @@ assertions.runAll(content, [
   - Formula: `1 - editDistance / max(content.length, expected.length)`
   - Score of 1.0 = identical strings, 0.0 = completely different
 
+### `rouge1`
+
+Compute ROUGE-1 (unigram recall) score between response content and reference text. Measures how many reference words appear in the output. Good for summarization testing.
+
+```typescript
+// Programmatic API — score only (always passes)
+assertions.rouge1('the cat sat on the mat', 'the cat sat');
+// { passed: true, score: 1.0, ... } — all reference tokens found
+
+// With threshold
+assertions.rouge1('the cat', 'the cat sat on the mat', { threshold: 0.5 });
+// { passed: false, score: 0.333, ... }
+
+// With runAll()
+assertions.runAll(content, [
+  { type: 'rouge1', value: { expected: 'key points from reference', threshold: 0.6 } },
+]);
+```
+
+- `rouge1(content, reference, options?)`: Recall-based unigram overlap.
+  - `reference`: The reference text to compare against
+  - `options.threshold`: Minimum score to pass (optional)
+  - Case-insensitive tokenization on whitespace
+  - Score = matched reference tokens / total reference tokens
+
+### `bleu`
+
+Compute BLEU score between response content and reference text. Uses modified n-gram precision (1-4 grams) with brevity penalty. Good for translation and rephrasing testing.
+
+```typescript
+// Programmatic API
+assertions.bleu('the cat sat on the mat', 'the cat sat on the mat');
+// { passed: true, score: 1.0, ... }
+
+// Shorter output gets brevity penalty
+assertions.bleu('the cat', 'the cat sat on the mat', { threshold: 0.5 });
+// { passed: false, score: ~0.15, ... }
+
+// With runAll()
+assertions.runAll(content, [
+  { type: 'bleu', value: { expected: 'reference translation', threshold: 0.4 } },
+]);
+```
+
+- `bleu(content, reference, options?)`: Precision-based n-gram scorer with brevity penalty.
+  - `reference`: The reference text to compare against
+  - `options.threshold`: Minimum score to pass (optional)
+  - Uses n-grams from 1 to 4 with equal weights
+  - Applies brevity penalty when output is shorter than reference
+
 ## Operational assertions
 
 Operational assertions check performance and resource metrics from the test result, not the response content.

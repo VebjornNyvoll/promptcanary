@@ -755,3 +755,133 @@ describe('levenshtein', () => {
     expect(result.passed).toBe(false);
   });
 });
+
+describe('rouge1', () => {
+  it('returns score 1.0 for identical strings', () => {
+    const result = assertions.rouge1('the cat sat on the mat', 'the cat sat on the mat');
+    expect(result.passed).toBe(true);
+    expect(result.score).toBe(1.0);
+    expect(result.type).toBe('rouge1');
+  });
+
+  it('returns score 0.0 for completely different strings', () => {
+    const result = assertions.rouge1('alpha beta gamma', 'one two three');
+    expect(result.score).toBe(0.0);
+  });
+
+  it('computes recall-based overlap', () => {
+    const result = assertions.rouge1('the cat sat on the mat today', 'the cat sat');
+    expect(result.score).toBe(1.0);
+  });
+
+  it('returns lower score when output misses reference tokens', () => {
+    const result = assertions.rouge1('the cat', 'the cat sat on the mat');
+    expect(result.score).toBeLessThan(1.0);
+    expect(result.score).toBeGreaterThan(0.0);
+  });
+
+  it('passes when score meets threshold', () => {
+    const result = assertions.rouge1('the cat sat on the mat', 'the cat sat on the mat', {
+      threshold: 0.8,
+    });
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when score is below threshold', () => {
+    const result = assertions.rouge1('hello', 'the cat sat on the mat', { threshold: 0.8 });
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('below threshold');
+  });
+
+  it('always passes without threshold', () => {
+    const result = assertions.rouge1('a', 'b');
+    expect(result.passed).toBe(true);
+  });
+
+  it('handles empty strings', () => {
+    expect(assertions.rouge1('', '').score).toBe(1.0);
+    expect(assertions.rouge1('hello', '').score).toBe(0.0);
+    expect(assertions.rouge1('', 'hello').score).toBe(0.0);
+  });
+
+  it('is case-insensitive', () => {
+    const result = assertions.rouge1('The Cat', 'the cat');
+    expect(result.score).toBe(1.0);
+  });
+
+  it('works in runAll', () => {
+    const descriptors: AssertionDescriptor[] = [
+      { type: 'rouge1', value: { expected: 'the cat sat', threshold: 0.5 } },
+    ];
+    const result = assertions.runAll('the cat sat on the mat', descriptors);
+    expect(result.passed).toBe(true);
+    expect(result.results[0].type).toBe('rouge1');
+  });
+});
+
+describe('bleu', () => {
+  it('returns score 1.0 for identical strings', () => {
+    const result = assertions.bleu('the cat sat on the mat', 'the cat sat on the mat');
+    expect(result.passed).toBe(true);
+    expect(result.score).toBe(1.0);
+    expect(result.type).toBe('bleu');
+  });
+
+  it('returns score 0.0 for completely different strings', () => {
+    const result = assertions.bleu('alpha beta gamma delta', 'one two three four');
+    expect(result.score).toBe(0.0);
+  });
+
+  it('penalizes shorter outputs with brevity penalty', () => {
+    const full = assertions.bleu('the cat sat on the mat', 'the cat sat on the mat');
+    const short = assertions.bleu('the cat', 'the cat sat on the mat');
+    expect(short.score).toBeLessThan(full.score ?? 0);
+  });
+
+  it('passes when score meets threshold', () => {
+    const result = assertions.bleu('the cat sat on the mat', 'the cat sat on the mat', {
+      threshold: 0.8,
+    });
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when score is below threshold', () => {
+    const result = assertions.bleu('hello world', 'the cat sat on the mat', { threshold: 0.5 });
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('below threshold');
+  });
+
+  it('always passes without threshold', () => {
+    const result = assertions.bleu('a', 'b');
+    expect(result.passed).toBe(true);
+  });
+
+  it('handles empty strings', () => {
+    expect(assertions.bleu('', '').score).toBe(1.0);
+    expect(assertions.bleu('hello', '').score).toBe(0);
+    expect(assertions.bleu('', 'hello').score).toBe(0.0);
+  });
+
+  it('is case-insensitive', () => {
+    const result = assertions.bleu('The Cat Sat', 'the cat sat');
+    expect(result.score).toBe(1.0);
+  });
+
+  it('considers n-gram order', () => {
+    const ordered = assertions.bleu('the cat sat on the mat', 'the cat sat on the mat');
+    const scrambled = assertions.bleu(
+      'mat on sat the the cat extra words to avoid brevity',
+      'the cat sat on the mat',
+    );
+    expect(scrambled.score).toBeLessThan(ordered.score ?? 0);
+  });
+
+  it('works in runAll', () => {
+    const descriptors: AssertionDescriptor[] = [
+      { type: 'bleu', value: { expected: 'the cat sat on the mat', threshold: 0.5 } },
+    ];
+    const result = assertions.runAll('the cat sat on the mat', descriptors);
+    expect(result.passed).toBe(true);
+    expect(result.results[0].type).toBe('bleu');
+  });
+});
