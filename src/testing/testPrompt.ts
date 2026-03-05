@@ -15,6 +15,7 @@ import { ConfigError } from '../types/index.js';
 import '../core/runner/providers/openai.js';
 import '../core/runner/providers/anthropic.js';
 import '../core/runner/providers/google.js';
+import '../core/runner/providers/ollama.js';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_CACHE_TTL = 86400;
@@ -25,6 +26,8 @@ const providerApiKeyEnvMap: Record<TestPromptOptions['provider'], string> = {
   openai: 'OPENAI_API_KEY',
   anthropic: 'ANTHROPIC_API_KEY',
   google: 'GOOGLE_API_KEY',
+  ollama: 'OLLAMA_BASE_URL',
+  'openai-compatible': 'OPENAI_API_KEY',
 };
 
 function getLastUserMessageContent(messages: TestPromptOptions['messages']): string {
@@ -107,6 +110,7 @@ async function executePrompt(
     timeout_ms: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
     ...(options.temperature !== undefined ? { temperature: options.temperature } : {}),
     ...(options.maxTokens !== undefined ? { max_tokens: options.maxTokens } : {}),
+    ...(options.baseUrl !== undefined ? { base_url: options.baseUrl } : {}),
   };
 
   if (options.apiKey !== undefined) {
