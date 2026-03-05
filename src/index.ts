@@ -38,6 +38,10 @@ export type {
   TestPromptMultiOptions,
   MultiRunResult,
   MultiRunAssertionResult,
+  CompareModelsModelConfig,
+  CompareModelsOptions,
+  ModelComparisonResult,
+  CompareModelsResult,
 } from './types/index.js';
 
 export { ProviderError, TimeoutError, RateLimitError, ConfigError } from './types/index.js';
@@ -49,6 +53,7 @@ export { compareResponse } from './core/comparator/index.js';
 export { Storage } from './storage/index.js';
 
 export { testPrompt, testPromptMulti } from './testing/testPrompt.js';
+export { compareModels } from './testing/compareModels.js';
 export { semanticSimilarity } from './testing/semanticSimilarity.js';
 export { assertions } from './testing/assertions.js';
 export type { AssertionDescriptor, RunAllResult } from './testing/assertions.js';
