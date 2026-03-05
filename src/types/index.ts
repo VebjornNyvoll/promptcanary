@@ -232,3 +232,14 @@ export interface Rouge1Options {
 export interface BleuOptions {
   threshold?: number;
 }
+
+export interface CustomScorerResult {
+  score: number;
+  pass: boolean;
+  reason: string;
+}
+
+export interface CustomScorerOptions {
+  scorer: (output: string, input?: string) => CustomScorerResult | Promise<CustomScorerResult>;
+  input?: string;
+}

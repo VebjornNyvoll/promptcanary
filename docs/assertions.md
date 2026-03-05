@@ -196,6 +196,42 @@ assertions.runAll(content, [
   - Uses n-grams from 1 to 4 with equal weights
   - Applies brevity penalty when output is shorter than reference
 
+### `custom`
+
+Run a user-defined scorer function for domain-specific assertion logic. Supports both sync and async scorers.
+
+```typescript
+// Sync scorer
+const result = await assertions.custom(content, {
+  scorer: (output) => {
+    const hasCitation = /\[\d+\]/.test(output);
+    return {
+      score: hasCitation ? 1.0 : 0.0,
+      pass: hasCitation,
+      reason: hasCitation ? 'Contains citation' : 'Missing citation reference',
+    };
+  },
+});
+
+// Async scorer with input context
+const result = await assertions.custom(content, {
+  scorer: async (output, input) => {
+    const grammarScore = await checkGrammar(output);
+    return {
+      score: grammarScore,
+      pass: grammarScore > 0.8,
+      reason: `Grammar score: ${grammarScore}`,
+    };
+  },
+  input: 'original prompt',
+});
+```
+
+- `custom(content, options)`: Async custom scorer function.
+  - `options.scorer`: Function `(output, input?) => { score, pass, reason }` — can be sync or async
+  - `options.input`: Optional input context passed as second argument to scorer
+  - Returns `AssertionResult` with the scorer's score, pass/fail, and reason
+
 ## Operational assertions
 
 Operational assertions check performance and resource metrics from the test result, not the response content.

@@ -2,6 +2,7 @@ import type {
   AnswerRelevanceOptions,
   AssertionResult,
   BleuOptions,
+  CustomScorerOptions,
   FaithfulnessOptions,
   FactualityOptions,
   JudgeResult,
@@ -555,6 +556,20 @@ function bleu(content: string, reference: string, options?: BleuOptions): Assert
   };
 }
 
+async function custom(content: string, options: CustomScorerOptions): Promise<AssertionResult> {
+  const scorerResult = await options.scorer(content, options.input);
+  const roundedScore = Math.round(scorerResult.score * 1000) / 1000;
+
+  return {
+    type: 'custom',
+    passed: scorerResult.pass,
+    expected: 'custom scorer to pass',
+    actual: `score: ${String(roundedScore)} — ${scorerResult.reason}`,
+    score: roundedScore,
+    details: scorerResult.pass ? undefined : scorerResult.reason,
+  };
+}
+
 async function llmRubric(content: string, options: LlmRubricOptions): Promise<JudgeResult> {
   const threshold = options.threshold ?? 0.5;
   const prompt = buildRubricPrompt(content, options.criteria, options.input, threshold);
@@ -707,6 +722,7 @@ export const assertions = {
   levenshtein,
   rouge1,
   bleu,
+  custom,
   llmRubric,
   factuality,
   answerRelevance,
