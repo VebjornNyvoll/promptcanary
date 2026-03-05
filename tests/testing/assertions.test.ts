@@ -267,10 +267,12 @@ describe('assertions', () => {
         { type: 'regex', value: '\\d+' },
         { type: 'is_json', value: '' },
         { type: 'json_schema', value: { status: 'string', count: 'number' } },
+        { type: 'case_sensitive_contains', value: 'status' },
+        { type: 'word_count', value: { min: 1, max: 10 } },
       ];
       const result = assertions.runAll(content, descriptors);
       expect(result.passed).toBe(true);
-      expect(result.results).toHaveLength(9);
+      expect(result.results).toHaveLength(11);
     });
 
     it('returns empty results for empty descriptors', () => {
@@ -281,107 +283,236 @@ describe('assertions', () => {
   });
 });
 
-  describe('containsAll', () => {
-    it('passes when all substrings are found', () => {
-      const result = assertions.containsAll('Your refund will arrive in 30 days', [
-        'refund',
-        'arrive',
-        'days',
-      ]);
-      expect(result.passed).toBe(true);
-      expect(result.type).toBe('contains_all');
-    });
-
-    it('is case-insensitive', () => {
-      const result = assertions.containsAll('REFUND PROCESSED SUCCESSFULLY', [
-        'refund',
-        'processed',
-      ]);
-      expect(result.passed).toBe(true);
-    });
-
-    it('fails when some substrings are missing', () => {
-      const result = assertions.containsAll('Your refund will arrive', [
-        'refund',
-        'error',
-        'days',
-      ]);
-      expect(result.passed).toBe(false);
-      expect(result.details).toContain('error');
-      expect(result.details).toContain('days');
-    });
-
-    it('fails when all substrings are missing', () => {
-      const result = assertions.containsAll('Hello world', ['foo', 'bar', 'baz']);
-      expect(result.passed).toBe(false);
-      expect(result.details).toContain('foo');
-      expect(result.details).toContain('bar');
-      expect(result.details).toContain('baz');
-    });
-
-    it('handles empty array', () => {
-      const result = assertions.containsAll('any content', []);
-      expect(result.passed).toBe(true);
-    });
-
-    it('handles empty content', () => {
-      const result = assertions.containsAll('', ['anything']);
-      expect(result.passed).toBe(false);
-    });
-
-    it('reports all missing substrings in details', () => {
-      const result = assertions.containsAll('test', ['a', 'b', 'c']);
-      expect(result.details).toContain('"a"');
-      expect(result.details).toContain('"b"');
-      expect(result.details).toContain('"c"');
-    });
+describe('containsAll', () => {
+  it('passes when all substrings are found', () => {
+    const result = assertions.containsAll('Your refund will arrive in 30 days', [
+      'refund',
+      'arrive',
+      'days',
+    ]);
+    expect(result.passed).toBe(true);
+    expect(result.type).toBe('contains_all');
   });
 
-  describe('containsAny', () => {
-    it('passes when at least one substring is found', () => {
-      const result = assertions.containsAny('Your refund will arrive in 30 days', [
-        'error',
-        'refund',
-        'warning',
-      ]);
-      expect(result.passed).toBe(true);
-      expect(result.type).toBe('contains_any');
-    });
-
-    it('is case-insensitive', () => {
-      const result = assertions.containsAny('REFUND PROCESSED', ['error', 'refund', 'warning']);
-      expect(result.passed).toBe(true);
-    });
-
-    it('fails when no substrings are found', () => {
-      const result = assertions.containsAny('Your order is confirmed', [
-        'error',
-        'warning',
-        'failed',
-      ]);
-      expect(result.passed).toBe(false);
-      expect(result.details).toContain('None of the substrings found');
-    });
-
-    it('handles empty array', () => {
-      const result = assertions.containsAny('any content', []);
-      expect(result.passed).toBe(false);
-    });
-
-    it('handles empty content', () => {
-      const result = assertions.containsAny('', ['anything']);
-      expect(result.passed).toBe(false);
-    });
-
-    it('reports which substring matched', () => {
-      const result = assertions.containsAny('Hello world', ['foo', 'world', 'bar']);
-      expect(result.passed).toBe(true);
-      expect(result.actual).toContain('world');
-    });
-
-    it('returns first matching substring', () => {
-      const result = assertions.containsAny('abc def ghi', ['def', 'abc', 'ghi']);
-      expect(result.passed).toBe(true);
-      expect(result.actual).toContain('def');
-    });
+  it('is case-insensitive', () => {
+    const result = assertions.containsAll('REFUND PROCESSED SUCCESSFULLY', ['refund', 'processed']);
+    expect(result.passed).toBe(true);
   });
+
+  it('fails when some substrings are missing', () => {
+    const result = assertions.containsAll('Your refund will arrive', ['refund', 'error', 'days']);
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('error');
+    expect(result.details).toContain('days');
+  });
+
+  it('fails when all substrings are missing', () => {
+    const result = assertions.containsAll('Hello world', ['foo', 'bar', 'baz']);
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('foo');
+    expect(result.details).toContain('bar');
+    expect(result.details).toContain('baz');
+  });
+
+  it('handles empty array', () => {
+    const result = assertions.containsAll('any content', []);
+    expect(result.passed).toBe(true);
+  });
+
+  it('handles empty content', () => {
+    const result = assertions.containsAll('', ['anything']);
+    expect(result.passed).toBe(false);
+  });
+
+  it('reports all missing substrings in details', () => {
+    const result = assertions.containsAll('test', ['a', 'b', 'c']);
+    expect(result.details).toContain('"a"');
+    expect(result.details).toContain('"b"');
+    expect(result.details).toContain('"c"');
+  });
+});
+
+describe('containsAny', () => {
+  it('passes when at least one substring is found', () => {
+    const result = assertions.containsAny('Your refund will arrive in 30 days', [
+      'error',
+      'refund',
+      'warning',
+    ]);
+    expect(result.passed).toBe(true);
+    expect(result.type).toBe('contains_any');
+  });
+
+  it('is case-insensitive', () => {
+    const result = assertions.containsAny('REFUND PROCESSED', ['error', 'refund', 'warning']);
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when no substrings are found', () => {
+    const result = assertions.containsAny('Your order is confirmed', [
+      'error',
+      'warning',
+      'failed',
+    ]);
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('None of the substrings found');
+  });
+
+  it('handles empty array', () => {
+    const result = assertions.containsAny('any content', []);
+    expect(result.passed).toBe(false);
+  });
+
+  it('handles empty content', () => {
+    const result = assertions.containsAny('', ['anything']);
+    expect(result.passed).toBe(false);
+  });
+
+  it('reports which substring matched', () => {
+    const result = assertions.containsAny('Hello world', ['foo', 'world', 'bar']);
+    expect(result.passed).toBe(true);
+    expect(result.actual).toContain('world');
+  });
+
+  it('returns first matching substring', () => {
+    const result = assertions.containsAny('abc def ghi', ['def', 'abc', 'ghi']);
+    expect(result.passed).toBe(true);
+    expect(result.actual).toContain('def');
+  });
+});
+
+describe('caseSensitiveContains', () => {
+  it('passes when content contains exact substring', () => {
+    const result = assertions.caseSensitiveContains('Your refund will arrive', 'refund');
+    expect(result.passed).toBe(true);
+    expect(result.type).toBe('case_sensitive_contains');
+  });
+
+  it('fails when case does not match', () => {
+    const result = assertions.caseSensitiveContains('Your REFUND will arrive', 'refund');
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('case-sensitive');
+  });
+
+  it('passes when case matches exactly', () => {
+    const result = assertions.caseSensitiveContains('REFUND processed', 'REFUND');
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when substring is not found', () => {
+    const result = assertions.caseSensitiveContains('Your order is confirmed', 'refund');
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('does not contain');
+  });
+
+  it('handles empty content', () => {
+    const result = assertions.caseSensitiveContains('', 'anything');
+    expect(result.passed).toBe(false);
+  });
+
+  it('handles empty substring', () => {
+    const result = assertions.caseSensitiveContains('content', '');
+    expect(result.passed).toBe(true);
+  });
+
+  it('is case-sensitive for mixed case', () => {
+    const result = assertions.caseSensitiveContains('The Refund Policy', 'Refund');
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails for partial case mismatch', () => {
+    const result = assertions.caseSensitiveContains('The Refund Policy', 'refund');
+    expect(result.passed).toBe(false);
+  });
+});
+
+describe('wordCount', () => {
+  it('passes when word count is within range', () => {
+    const result = assertions.wordCount('one two three four five', { min: 3, max: 10 });
+    expect(result.passed).toBe(true);
+    expect(result.type).toBe('word_count');
+  });
+
+  it('counts words correctly', () => {
+    const result = assertions.wordCount('one two three', { min: 3, max: 3 });
+    expect(result.passed).toBe(true);
+    expect(result.actual).toBe('3 words');
+  });
+
+  it('fails when word count is below minimum', () => {
+    const result = assertions.wordCount('one two', { min: 5 });
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('Expected >= 5 words');
+  });
+
+  it('fails when word count exceeds maximum', () => {
+    const result = assertions.wordCount('one two three four five', { max: 3 });
+    expect(result.passed).toBe(false);
+    expect(result.details).toContain('Expected <= 3 words');
+  });
+
+  it('handles empty content as zero words', () => {
+    const result = assertions.wordCount('', { min: 0, max: 5 });
+    expect(result.passed).toBe(true);
+    expect(result.actual).toBe('0 words');
+  });
+
+  it('handles whitespace-only content as zero words', () => {
+    const result = assertions.wordCount('   \t\n  ', { min: 0, max: 5 });
+    expect(result.passed).toBe(true);
+    expect(result.actual).toBe('0 words');
+  });
+
+  it('counts words with multiple spaces correctly', () => {
+    const result = assertions.wordCount('one    two    three', { min: 3, max: 3 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('counts words with tabs and newlines correctly', () => {
+    const result = assertions.wordCount('one\ttwo\nthree', { min: 3, max: 3 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('passes with only minimum constraint', () => {
+    const result = assertions.wordCount('one two three four five', { min: 3 });
+    expect(result.passed).toBe(true);
+    expect(result.expected).toBe('>= 3 words');
+  });
+
+  it('passes with only maximum constraint', () => {
+    const result = assertions.wordCount('one two three', { max: 10 });
+    expect(result.passed).toBe(true);
+    expect(result.expected).toBe('<= 10 words');
+  });
+
+  it('passes with no constraints', () => {
+    const result = assertions.wordCount('any content here', {});
+    expect(result.passed).toBe(true);
+    expect(result.expected).toBe('any word count');
+  });
+
+  it('handles exact minimum boundary', () => {
+    const result = assertions.wordCount('one two three', { min: 3 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('handles exact maximum boundary', () => {
+    const result = assertions.wordCount('one two three', { max: 3 });
+    expect(result.passed).toBe(true);
+  });
+
+  it('fails when below minimum boundary', () => {
+    const result = assertions.wordCount('one two', { min: 3 });
+    expect(result.passed).toBe(false);
+  });
+
+  it('fails when above maximum boundary', () => {
+    const result = assertions.wordCount('one two three four', { max: 3 });
+    expect(result.passed).toBe(false);
+  });
+
+  it('reports correct word count in details', () => {
+    const result = assertions.wordCount('a b c d e', { min: 10 });
+    expect(result.details).toContain('5 words');
+  });
+});

@@ -118,7 +118,56 @@ function containsAny(content: string, substrings: string[]): AssertionResult {
     passed,
     expected: `contains at least one of: ${substrings.map((s) => `"${s}"`).join(', ')}`,
     actual: passed ? `found "${matchedStr}"` : 'none found',
-    details: passed ? undefined : `None of the substrings found: ${substrings.map((s) => `"${s}"`).join(', ')}`,
+    details: passed
+      ? undefined
+      : `None of the substrings found: ${substrings.map((s) => `"${s}"`).join(', ')}`,
+  };
+}
+
+function caseSensitiveContains(content: string, substring: string): AssertionResult {
+  const passed = content.includes(substring);
+  return {
+    type: 'case_sensitive_contains',
+    passed,
+    expected: `contains "${substring}" (case-sensitive)`,
+    actual: passed ? 'found' : 'not found',
+    details: passed ? undefined : `Content does not contain "${substring}" (case-sensitive)`,
+  };
+}
+
+function wordCount(content: string, options: { min?: number; max?: number }): AssertionResult {
+  const words = content
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w.length > 0);
+  const count = words.length;
+  const { min, max } = options;
+
+  let passed = true;
+  if (min !== undefined && count < min) {
+    passed = false;
+  }
+  if (max !== undefined && count > max) {
+    passed = false;
+  }
+
+  let expected = '';
+  if (min !== undefined && max !== undefined) {
+    expected = `${String(min)}-${String(max)} words`;
+  } else if (min !== undefined) {
+    expected = `>= ${String(min)} words`;
+  } else if (max !== undefined) {
+    expected = `<= ${String(max)} words`;
+  } else {
+    expected = 'any word count';
+  }
+
+  return {
+    type: 'word_count',
+    passed,
+    expected,
+    actual: `${String(count)} words`,
+    details: passed ? undefined : `Expected ${expected}, got ${String(count)} words`,
   };
 }
 
@@ -196,12 +245,20 @@ export interface AssertionDescriptor {
     | 'ends_with'
     | 'contains_all'
     | 'contains_any'
+    | 'case_sensitive_contains'
+    | 'word_count'
     | 'max_length'
     | 'min_length'
     | 'regex'
     | 'is_json'
     | 'json_schema';
-  value: string | number | RegExp | Record<string, string> | string[];
+  value:
+    | string
+    | number
+    | RegExp
+    | Record<string, string>
+    | string[]
+    | { min?: number; max?: number };
 }
 
 export interface RunAllResult {
@@ -231,6 +288,12 @@ function runAll(content: string, descriptors: AssertionDescriptor[]): RunAllResu
         break;
       case 'contains_any':
         results.push(containsAny(content, descriptor.value as string[]));
+        break;
+      case 'case_sensitive_contains':
+        results.push(caseSensitiveContains(content, descriptor.value as string));
+        break;
+      case 'word_count':
+        results.push(wordCount(content, descriptor.value as { min?: number; max?: number }));
         break;
       case 'max_length':
         results.push(maxLength(content, Number(descriptor.value)));
@@ -263,6 +326,8 @@ export const assertions = {
   endsWith,
   containsAll,
   containsAny,
+  caseSensitiveContains,
+  wordCount,
   maxLength,
   minLength,
   matchesRegex,
