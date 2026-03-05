@@ -23,10 +23,11 @@ export interface ChatMessage {
 }
 
 export interface TestPromptOptions {
-  provider: 'openai' | 'anthropic' | 'google';
+  provider: 'openai' | 'anthropic' | 'google' | 'ollama' | 'openai-compatible';
   model: string;
   messages: ChatMessage[];
   apiKey?: string;
+  baseUrl?: string;
   temperature?: number;
   maxTokens?: number;
   timeoutMs?: number;
@@ -131,9 +132,10 @@ export class ConfigError extends Error {
 }
 
 export interface JudgeOptions {
-  provider?: 'openai' | 'anthropic' | 'google';
+  provider?: 'openai' | 'anthropic' | 'google' | 'ollama' | 'openai-compatible';
   model?: string;
   apiKey?: string;
+  baseUrl?: string;
   temperature?: number;
   timeoutMs?: number;
 }
@@ -194,9 +196,10 @@ export interface MultiRunAssertionResult {
 }
 
 export interface CompareModelsModelConfig {
-  provider: 'openai' | 'anthropic' | 'google';
+  provider: 'openai' | 'anthropic' | 'google' | 'ollama' | 'openai-compatible';
   model: string;
   apiKey?: string;
+  baseUrl?: string;
 }
 
 export interface CompareModelsOptions {

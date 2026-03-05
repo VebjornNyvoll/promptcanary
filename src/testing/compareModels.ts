@@ -22,6 +22,7 @@ export async function compareModels(
       model: modelConfig.model,
       messages: options.messages,
       apiKey: modelConfig.apiKey,
+      baseUrl: modelConfig.baseUrl,
       temperature: options.temperature,
       maxTokens: options.maxTokens,
       timeoutMs: options.timeoutMs,

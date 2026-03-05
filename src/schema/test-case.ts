@@ -21,6 +21,7 @@ export const ProviderConfigSchema = z.object({
     .positive()
     .default(30000)
     .describe('Request timeout in milliseconds'),
+  base_url: z.string().optional().describe('Custom base URL for the provider API endpoint'),
 });
 
 /**
