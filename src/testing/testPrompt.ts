@@ -16,6 +16,7 @@ import '../core/runner/providers/openai.js';
 import '../core/runner/providers/anthropic.js';
 import '../core/runner/providers/google.js';
 import '../core/runner/providers/ollama.js';
+import '../core/runner/providers/openai-compatible.js';
 
 const DEFAULT_TIMEOUT_MS = 30000;
 const DEFAULT_CACHE_TTL = 86400;
