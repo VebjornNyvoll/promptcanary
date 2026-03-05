@@ -46,6 +46,64 @@ describe('assertions', () => {
     });
   });
 
+  describe('startsWith', () => {
+    it('passes when content starts with prefix', () => {
+      const result = assertions.startsWith('Your refund will arrive in 30 days', 'Your');
+      expect(result.passed).toBe(true);
+      expect(result.type).toBe('starts_with');
+    });
+
+    it('is case-insensitive', () => {
+      const result = assertions.startsWith('REFUND processed', 'refund');
+      expect(result.passed).toBe(true);
+    });
+
+    it('fails when content does not start with prefix', () => {
+      const result = assertions.startsWith('The refund will arrive', 'Your');
+      expect(result.passed).toBe(false);
+      expect(result.details).toContain('does not start with');
+    });
+
+    it('handles empty content', () => {
+      const result = assertions.startsWith('', 'anything');
+      expect(result.passed).toBe(false);
+    });
+
+    it('passes when content is exactly the prefix', () => {
+      const result = assertions.startsWith('hello', 'hello');
+      expect(result.passed).toBe(true);
+    });
+  });
+
+  describe('endsWith', () => {
+    it('passes when content ends with suffix', () => {
+      const result = assertions.endsWith('Your refund will arrive in 30 days', 'days');
+      expect(result.passed).toBe(true);
+      expect(result.type).toBe('ends_with');
+    });
+
+    it('is case-insensitive', () => {
+      const result = assertions.endsWith('Processing REFUND', 'refund');
+      expect(result.passed).toBe(true);
+    });
+
+    it('fails when content does not end with suffix', () => {
+      const result = assertions.endsWith('The refund will arrive', 'tomorrow');
+      expect(result.passed).toBe(false);
+      expect(result.details).toContain('does not end with');
+    });
+
+    it('handles empty content', () => {
+      const result = assertions.endsWith('', 'anything');
+      expect(result.passed).toBe(false);
+    });
+
+    it('passes when content is exactly the suffix', () => {
+      const result = assertions.endsWith('hello', 'hello');
+      expect(result.passed).toBe(true);
+    });
+  });
+
   describe('maxLength', () => {
     it('passes when content is within limit', () => {
       const result = assertions.maxLength('short', 500);
@@ -202,6 +260,8 @@ describe('assertions', () => {
       const descriptors: AssertionDescriptor[] = [
         { type: 'contains', value: 'ok' },
         { type: 'not_contains', value: 'error' },
+        { type: 'starts_with', value: '{' },
+        { type: 'ends_with', value: '}' },
         { type: 'max_length', value: 100 },
         { type: 'min_length', value: 5 },
         { type: 'regex', value: '\\d+' },
@@ -210,7 +270,7 @@ describe('assertions', () => {
       ];
       const result = assertions.runAll(content, descriptors);
       expect(result.passed).toBe(true);
-      expect(result.results).toHaveLength(7);
+      expect(result.results).toHaveLength(9);
     });
 
     it('returns empty results for empty descriptors', () => {
