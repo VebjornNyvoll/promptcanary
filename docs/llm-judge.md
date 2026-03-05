@@ -155,10 +155,36 @@ const result = await assertions.factuality(
 | `expected` | `string`       | —       | Expert reference answer (required) |
 | `judge`    | `JudgeOptions` | —       | Judge model configuration          |
 
+## answerRelevance
+
+Evaluate whether an LLM response is relevant to the input question. Catches tangential or off-topic responses.
+
+```typescript
+import { assertions } from 'promptcanary';
+
+const result = await assertions.answerRelevance(
+  'To reset your password, go to Settings > Security > Reset Password.',
+  {
+    input: 'How do I reset my password?',
+    threshold: 0.7,
+    judge: { model: 'gpt-4o-mini' },
+  },
+);
+```
+
+Scores based on directness (does it answer the question?), completeness (does it cover key aspects?), and focus (is it free of tangents?).
+
+### AnswerRelevanceOptions
+
+| Option      | Type           | Default | Description                      |
+| ----------- | -------------- | ------- | -------------------------------- |
+| `input`     | `string`       | —       | The original question (required) |
+| `threshold` | `number`       | `0.5`   | Score threshold for pass/fail    |
+| `judge`     | `JudgeOptions` | —       | Judge model configuration        |
+
 ## Coming Soon
 
 Specialized scorers building on this infrastructure:
 
-- **`answerRelevance`** — Response relevance to the input question
 - **`faithfulness`** — RAG hallucination detection
 - **`toxicity`** — Harmful content detection

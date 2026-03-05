@@ -98,3 +98,39 @@ You MUST respond with ONLY a JSON object in the following format, no other text:
 
 {"score": <number>, "pass": <boolean>, "reason": "<which category (A-E) and why>"}`;
 }
+
+export function buildAnswerRelevancePrompt(
+  content: string,
+  input: string,
+  threshold: number,
+): string {
+  return `You are an expert evaluator assessing answer relevance. Determine how well the submission addresses the original question.
+
+## Original Question
+${input}
+
+## Submission
+${content}
+
+## Evaluation Criteria
+Score the submission from 0.0 to 1.0 based on:
+- **Directness**: Does the submission directly answer the question asked?
+- **Completeness**: Does it cover the key aspects of the question?
+- **Focus**: Is the response focused on the question without excessive tangents?
+
+Deduct points for:
+- Off-topic content that doesn't address the question
+- Excessive preamble or filler before the actual answer
+- Missing the core intent of the question
+- Answering a different question than what was asked
+
+## Instructions
+1. Read the question and submission carefully.
+2. Evaluate directness, completeness, and focus.
+3. Assign a score between 0.0 (completely irrelevant) and 1.0 (perfectly relevant and complete).
+4. Set pass to true if score >= ${String(threshold)}, false otherwise.
+
+You MUST respond with ONLY a JSON object in the following format, no other text:
+
+{"score": <number between 0.0 and 1.0>, "pass": <true if score >= ${String(threshold)}>, "reason": "<concise explanation>"}`;
+}
